@@ -2,6 +2,10 @@
 .runtime/
 *.log
 
+# Generated per-server theme files (rewritten whenever a server starts)
+servers/*/theme.yaml
+servers/*/templates/index.html
+
 # Python
 __pycache__/
 *.py[cod]
