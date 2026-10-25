@@ -1,0 +1,6 @@
+{
+  "title": "Panel Demo",
+  "description": "A Panel app with sidebar controls and a live Bokeh plot.",
+  "usage": "1. Start the server from the sidebar.\n2. Choose a waveform and adjust the sliders.\n3. Change the manager theme and reload to switch the Panel template theme.",
+  "framework": "panel"
+}
