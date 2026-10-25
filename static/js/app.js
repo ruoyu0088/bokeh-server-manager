@@ -18,6 +18,7 @@
     stop: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>',
     edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20ZM13.5 7.5l3 3"/></svg>',
     logs: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 12h9M5 19h11"/></svg>',
+    info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     external: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"/></svg>',
     close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -30,6 +31,7 @@
     active: null,
     busy: new Set(),
     fetching: false,
+    fetchPromise: null,
     online: true,
     restored: false,
     theme: "light",
@@ -307,7 +309,7 @@
       const title = serverTitle(server);
       const showDirectory = server.title && server.title !== server.name;
       const metaParts = [`<span>${statusLabel(status)}</span>`];
-      if (server.port) {
+      if (server.port && status !== "stopped") {
         metaParts.push(`<span class="server-port">:${server.port}</span>`);
       }
       if (server.status === "running" && server.uptime) {
@@ -335,7 +337,7 @@
             ${showDirectory ? `<span class="server-dir">${escapeHtml(server.name)}</span>` : ""}
             <div class="server-meta">
               ${metaParts.join("")}
-              ${themeChip(server)}
+              ${status === "stopped" ? "" : themeChip(server)}
             </div>
             ${descriptionHtml}
             ${errorHtml}
@@ -354,6 +356,13 @@
           <button class="icon-button" type="button" data-action="edit" title="Edit source" aria-label="Edit source for ${escapeHtml(
             title,
           )}" ${busy ? "disabled" : ""}>${ICONS.edit}</button>
+          <button class="icon-button${server.metadata_error ? " warn" : ""}" type="button" data-action="metadata" title="${
+            server.metadata_error
+              ? "Server information (server.json has an error)"
+              : "Server information"
+          }" aria-label="Edit server information for ${escapeHtml(
+            title,
+          )}" ${busy ? "disabled" : ""}>${ICONS.info}</button>
           <button class="icon-button" type="button" data-action="logs" title="View logs" aria-label="View logs for ${escapeHtml(
             title,
           )}">${ICONS.logs}</button>
@@ -607,21 +616,25 @@
   }
 
   async function refreshServers({ silent = false } = {}) {
-    if (state.fetching) return;
-    if (document.hidden && silent) return;
+    if (state.fetching) return state.fetchPromise;
+    if (document.hidden && silent) return null;
     state.fetching = true;
-    try {
-      const data = await apiFetch("/api/servers");
-      state.servers = Array.isArray(data.servers) ? data.servers : [];
-      setManagerStatus(true);
-      renderSidebar();
-      syncTabs();
-      if (!state.restored) restoreTabs();
-    } catch (error) {
-      if (!silent) toast(error.message || "Failed to refresh servers.", "error", 6000);
-    } finally {
-      state.fetching = false;
-    }
+    state.fetchPromise = (async () => {
+      try {
+        const data = await apiFetch("/api/servers");
+        state.servers = Array.isArray(data.servers) ? data.servers : [];
+        setManagerStatus(true);
+        renderSidebar();
+        syncTabs();
+        if (!state.restored) restoreTabs();
+      } catch (error) {
+        if (!silent) toast(error.message || "Failed to refresh servers.", "error", 6000);
+      } finally {
+        state.fetching = false;
+        state.fetchPromise = null;
+      }
+    })();
+    return state.fetchPromise;
   }
 
   async function startServer(name) {
@@ -637,7 +650,10 @@
           body: JSON.stringify({ theme: currentTheme() }),
         },
       );
-      toast(`Started “${serverTitle(serverByName(name) || { name })}” on port ${data.port}.`, "success");
+      const known = serverByName(name) || { name };
+      const started = { ...known, ...data };
+      toast(`Started “${serverTitle(started)}” on port ${data.port}.`, "success");
+      openTab(started);
       await refreshServers({ silent: true });
       const server = serverByName(name);
       if (server) openTab(server);
@@ -774,6 +790,88 @@
     return close;
   }
 
+  function showServerInfo(name) {
+    const server = serverByName(name);
+    if (!server) return;
+    const title = serverTitle(server);
+    const warning = server.metadata_error
+      ? `<div class="form-notice"><strong>server.json needs attention.</strong> ${escapeHtml(
+          server.metadata_error,
+        )} Saving this form will replace it with valid metadata.</div>`
+      : "";
+    const body = `
+      ${warning}
+      <div class="form-error" id="metadata-error"></div>
+      <form id="metadata-form" autocomplete="off">
+        <div class="form-field">
+          <label for="metadata-title">Title</label>
+          <input id="metadata-title" maxlength="120" value="${escapeHtml(
+            server.title || "",
+          )}" placeholder="${escapeHtml(name)}">
+          <div class="form-hint">Used in the sidebar and tab. Falls back to the directory name when empty.</div>
+        </div>
+        <div class="form-field">
+          <label for="metadata-description">Description</label>
+          <textarea id="metadata-description" rows="2" maxlength="400">${escapeHtml(
+            server.description || "",
+          )}</textarea>
+          <div class="form-hint">A short summary shown under the server title.</div>
+        </div>
+        <div class="form-field">
+          <label for="metadata-usage">Usage</label>
+          <textarea id="metadata-usage" rows="7">${escapeHtml(
+            server.usage || "",
+          )}</textarea>
+          <div class="form-hint">Shown in this dialog. Plain text; line breaks are preserved.</div>
+        </div>
+        <div class="form-hint">Directory: <code>${escapeHtml(
+          name,
+        )}</code> · Saved to <code>server.json</code></div>
+      </form>
+    `;
+    openModal({
+      title: `Server information · ${title}`,
+      body,
+      footer:
+        '<button class="button button-ghost" type="button" data-modal-close="true">Cancel</button>' +
+        '<button class="button button-primary" id="save-metadata" type="submit" form="metadata-form">Save</button>',
+      onMount: (close) => {
+        const form = $("#metadata-form");
+        const errorBox = $("#metadata-error");
+        const saveButton = $("#save-metadata");
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          errorBox.classList.remove("visible");
+          saveButton.disabled = true;
+          saveButton.textContent = "Saving…";
+          try {
+            await apiFetch(
+              `/api/servers/${encodeURIComponent(name)}/metadata`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: $("#metadata-title").value,
+                  description: $("#metadata-description").value,
+                  usage: $("#metadata-usage").value,
+                }),
+              },
+            );
+            toast("Server information saved.", "success");
+            close();
+            await refreshServers({ silent: true });
+          } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.classList.add("visible");
+            saveButton.disabled = false;
+            saveButton.textContent = "Save";
+          }
+        });
+        $("#metadata-title").focus();
+      },
+    });
+  }
+
   async function showLogs(name) {
     const close = openModal({
       title: `Logs · ${name}`,
@@ -821,6 +919,7 @@
     if (action === "stop") stopServer(name);
     if (action === "reload") reloadServer(name);
     if (action === "edit") editServer(name);
+    if (action === "metadata") showServerInfo(name);
     if (action === "logs") showLogs(name);
     if (action === "external") openExternalFor(name);
   }

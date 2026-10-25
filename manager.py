@@ -11,6 +11,7 @@ on-disk conventions:
 from __future__ import annotations
 
 import atexit
+import json
 import os
 import re
 import shutil
@@ -36,8 +37,11 @@ THEMES_DIR = ROOT / "themes"
 
 SERVER_FILE = "main.py"
 THEME_FILE = "theme.yaml"
+METADATA_FILE = "server.json"
 
 MAX_EDIT_BYTES = 2 * 1024 * 1024
+MAX_METADATA_BYTES = 64 * 1024
+METADATA_FIELDS = ("title", "description", "usage")
 HOST = "127.0.0.1"
 START_TIMEOUT = 20.0
 STOP_TIMEOUT = 5.0
@@ -75,6 +79,10 @@ class ServerInfo:
     valid: bool
     error: str | None
     file_count: int
+    title: str = ""
+    description: str = ""
+    usage: str = ""
+    metadata_error: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -83,6 +91,10 @@ class ServerInfo:
             "error": self.error,
             "entry": self.entry.name if self.entry else None,
             "file_count": self.file_count,
+            "title": self.title,
+            "description": self.description,
+            "usage": self.usage,
+            "metadata_error": self.metadata_error,
         }
 
 
@@ -182,6 +194,42 @@ def _count_files(root: Path) -> int:
     return count
 
 
+def _load_metadata(path: Path) -> tuple[dict[str, Any], str | None]:
+    metadata_path = path / METADATA_FILE
+    if not metadata_path.exists():
+        return {}, None
+    if not metadata_path.is_file():
+        return {}, "server.json is not a regular file."
+    try:
+        stat = metadata_path.stat()
+        if stat.st_size > MAX_METADATA_BYTES:
+            return {}, "server.json is too large (limit: 64 KB)."
+        raw = metadata_path.read_bytes()
+    except OSError as exc:
+        return {}, f"Could not read server.json: {exc}"
+    if b"\x00" in raw:
+        return {}, "server.json contains binary data."
+    try:
+        data = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return {}, f"server.json is not valid JSON: {exc}"
+    if not isinstance(data, dict):
+        return {}, "server.json must contain a JSON object."
+    for field in METADATA_FIELDS:
+        value = data.get(field)
+        if value is not None and not isinstance(value, str):
+            return {}, f'server.json field "{field}" must be a string.'
+    return data, None
+
+
+def _metadata_values(metadata: dict[str, Any]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for field in METADATA_FIELDS:
+        value = metadata.get(field)
+        values[field] = value.strip() if isinstance(value, str) else ""
+    return values
+
+
 def get_server(name: str) -> ServerInfo:
     path = server_path(name)
     if not path.is_dir():
@@ -189,6 +237,8 @@ def get_server(name: str) -> ServerInfo:
     entry = path / SERVER_FILE
     valid = entry.is_file()
     error = None if valid else "Missing main.py, the entry point for a Bokeh directory application."
+    metadata, metadata_error = _load_metadata(path)
+    values = _metadata_values(metadata)
     return ServerInfo(
         name=name,
         path=path,
@@ -196,6 +246,10 @@ def get_server(name: str) -> ServerInfo:
         valid=valid,
         error=error,
         file_count=_count_files(path),
+        title=values["title"],
+        description=values["description"],
+        usage=values["usage"],
+        metadata_error=metadata_error,
     )
 
 
@@ -204,6 +258,8 @@ def list_servers() -> list[ServerInfo]:
     for path in _iter_servers():
         entry = path / SERVER_FILE
         valid = entry.is_file()
+        metadata, metadata_error = _load_metadata(path)
+        values = _metadata_values(metadata)
         servers.append(
             ServerInfo(
                 name=path.name,
@@ -212,6 +268,10 @@ def list_servers() -> list[ServerInfo]:
                 valid=valid,
                 error=None if valid else "Missing main.py, the entry point for a Bokeh directory application.",
                 file_count=_count_files(path),
+                title=values["title"],
+                description=values["description"],
+                usage=values["usage"],
+                metadata_error=metadata_error,
             )
         )
     return servers
@@ -275,6 +335,7 @@ def build_file_tree(name: str) -> dict[str, Any]:
                         "size": stat.st_size,
                         "mtime": stat.st_mtime,
                         "managed": child.name == THEME_FILE,
+                        "metadata": child.name == METADATA_FILE,
                     }
                 )
         return entries
@@ -309,6 +370,7 @@ def read_text_file(name: str, relative: str) -> dict[str, Any]:
         "size": stat.st_size,
         "mtime": stat.st_mtime,
         "managed": path.name == THEME_FILE,
+        "metadata": path.name == METADATA_FILE,
     }
 
 
@@ -338,6 +400,46 @@ def write_text_file(name: str, relative: str, content: str) -> dict[str, Any]:
         "size": stat.st_size,
         "mtime": stat.st_mtime,
     }
+
+
+def update_metadata(name: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Update title/description/usage in server.json and return the server state."""
+    if not isinstance(payload, dict):
+        raise ManagerError("Metadata must be a JSON object.", 400)
+    server = get_server(name)
+    metadata, _metadata_error = _load_metadata(server.path)
+    for field in METADATA_FIELDS:
+        if field not in payload:
+            continue
+        value = payload[field]
+        if value is None:
+            value = ""
+        if not isinstance(value, str):
+            raise ManagerError(f'Metadata field "{field}" must be a string.', 400)
+        value = value.strip()
+        if value:
+            metadata[field] = value
+        else:
+            metadata.pop(field, None)
+
+    encoded = (json.dumps(metadata, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    if len(encoded) > MAX_METADATA_BYTES:
+        raise ManagerError("server.json is too large (limit: 64 KB).", 413)
+    target = server.path / METADATA_FILE
+    temp_path = server.path / f".{METADATA_FILE}.tmp-{os.getpid()}"
+    try:
+        with temp_path.open("wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, target)
+    except OSError as exc:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise ManagerError(f"Could not save server.json: {exc}", 500) from exc
+    return server_state(name)
 
 
 def _listener_pid(port: int) -> int | None:

@@ -71,6 +71,14 @@ def api_server_logs(name: str) -> Response:
     return jsonify({"logs": manager.logs_for_server(name, int(lines))})
 
 
+@app.put("/api/servers/<name>/metadata")
+def api_update_metadata(name: str) -> Response:
+    payload = request.get_json(silent=True)
+    if payload is None:
+        payload = {}
+    return jsonify(manager.update_metadata(name, payload))
+
+
 @app.get("/favicon.ico")
 def favicon() -> Response:
     return Response(status=204)

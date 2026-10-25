@@ -334,6 +334,10 @@ svg {
   opacity: 0.35;
 }
 
+.icon-button.warn {
+  color: var(--warning);
+}
+
 .icon-button-small {
   width: 30px;
   height: 30px;
@@ -1152,6 +1156,31 @@ kbd {
 
 .form-error.visible {
   display: block;
+}
+
+.form-notice {
+  margin-bottom: 14px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.form-notice strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.form-field code,
+.form-hint code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface-soft);
+  font-family: var(--mono);
+  font-size: 10.5px;
 }
 
 .checkbox-row {
