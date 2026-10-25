@@ -443,6 +443,55 @@ def write_text_file(name: str, relative: str, content: str) -> dict[str, Any]:
     }
 
 
+def create_text_file(
+    name: str,
+    relative: str,
+    content: str = "",
+) -> dict[str, Any]:
+    """Create a new text file inside a server directory."""
+    server = get_server(name)
+    path = _safe_relative_path(server, relative)
+    if not isinstance(content, str):
+        raise ManagerError("File contents must be text.", 400)
+    encoded = content.encode("utf-8")
+    if len(encoded) > MAX_EDIT_BYTES:
+        raise ManagerError("File is too large. The editor supports files up to 2 MB.", 413)
+    if path.exists():
+        raise ManagerError("A file or directory with this path already exists.", 409)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("x", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+    except FileExistsError as exc:
+        raise ManagerError("A file or directory with this path already exists.", 409) from exc
+    except OSError as exc:
+        raise ManagerError(f"Could not create file: {exc}", 500) from exc
+    stat = path.stat()
+    relative_path = path.relative_to(server.path).as_posix()
+    return {
+        "path": relative_path,
+        "size": stat.st_size,
+        "mtime": stat.st_mtime,
+        "managed": _is_managed_file(relative_path),
+        "metadata": path.name == METADATA_FILE,
+    }
+
+
+def delete_text_file(name: str, relative: str) -> dict[str, Any]:
+    """Delete a single file inside a server directory."""
+    server = get_server(name)
+    path = _safe_relative_path(server, relative)
+    if not path.exists():
+        raise ManagerError("File not found.", 404)
+    if path.is_dir():
+        raise ManagerError("Only files can be deleted.", 400)
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise ManagerError(f"Could not delete file: {exc}", 500) from exc
+    return {"deleted": path.relative_to(server.path).as_posix()}
+
+
 def _write_metadata_file(server_dir: Path, metadata: dict[str, Any]) -> None:
     encoded = (json.dumps(metadata, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     if len(encoded) > MAX_METADATA_BYTES:

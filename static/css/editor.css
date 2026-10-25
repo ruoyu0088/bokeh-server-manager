@@ -158,7 +158,25 @@
   text-transform: uppercase;
 }
 
+.editor-sidebar-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.editor-sidebar-tools .icon-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.editor-sidebar-tools .icon-button svg {
+  width: 13px;
+  height: 13px;
+}
+
 .file-count {
+  margin-right: 3px;
   color: var(--muted);
   font-size: 10px;
   font-weight: 500;

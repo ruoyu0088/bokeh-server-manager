@@ -18,7 +18,7 @@ Each application runs in its own Bokeh process. The manager assigns a free port 
 - Start, reload, stop, edit source, edit metadata, view logs, and open a server in a new window.
 - Create a new Bokeh server from a blank or interactive template.
 - Light / dark themes for the manager, the editor, and Bokeh pages.
-- Source editor with a file tree, syntax highlighting, and `Ctrl+S` saving.
+- Source editor with a file tree, syntax highlighting, file creation/deletion, and `Ctrl+S` saving.
 - Bokeh `--dev` live reloading. The manager refreshes the iframe when the Bokeh process restarts.
 - Per-server metadata: title, description, and usage notes.
 - Two ready-to-run examples.
@@ -148,6 +148,8 @@ Click the pencil button on a server card to open the editor in a separate window
 
 - Left side: complete file tree for that server directory.
 - Right side: CodeMirror editor with Python, HTML, CSS, JavaScript, JSON, YAML, and Markdown modes.
+- Use the **+** button to create a file. Nested paths such as `lib/helpers.py` are supported; subdirectories are created automatically.
+- Use the trash button to delete the currently open file. A confirmation is required.
 - `Ctrl+S` saves the current file.
 - Unsaved changes are marked and prompt before switching files or closing the window.
 - `theme.yaml` and `templates/index.html` are marked `AUTO`; `server.json` is marked `META`.
@@ -185,7 +187,9 @@ POST   /api/servers/<name>/reload
 GET    /api/servers/<name>/logs
 GET    /api/servers/<name>/tree
 GET    /api/servers/<name>/file?path=...
+POST   /api/servers/<name>/file
 PUT    /api/servers/<name>/file
+DELETE /api/servers/<name>/file?path=...
 PUT    /api/servers/<name>/metadata
 ```
 

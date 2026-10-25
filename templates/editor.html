@@ -40,7 +40,15 @@
       <aside class="editor-sidebar" aria-label="Files" data-i18n-aria-label="editor.files">
         <div class="editor-sidebar-head">
           <span data-i18n="editor.files">Files</span>
-          <span class="file-count" id="file-count"></span>
+          <div class="editor-sidebar-tools">
+            <span class="file-count" id="file-count"></span>
+            <button class="icon-button icon-button-small" id="new-file" type="button" title="New file" aria-label="New file" data-i18n-title="editor.newFile" data-i18n-aria-label="editor.newFile">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="icon-button icon-button-small" id="delete-file" type="button" title="Delete file" aria-label="Delete file" data-i18n-title="editor.deleteFile" data-i18n-aria-label="editor.deleteFile" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+            </button>
+          </div>
         </div>
         <div class="file-tree" id="file-tree"></div>
         <div class="editor-sidebar-foot">
@@ -69,6 +77,7 @@
     </div>
   </div>
 
+  <div class="modal-root" id="modal-root"></div>
   <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="false"></div>
 
   <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>

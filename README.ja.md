@@ -18,7 +18,7 @@
 - 起動、再読み込み、停止、ソース編集、メタデータ編集、ログ表示、新しいウィンドウで開く。
 - 空白またはインタラクティブなテンプレートから新しい Bokeh サーバーを作成。
 - マネージャー、エディター、Bokeh ページのライト / ダークテーマ。
-- ファイルツリー、シンタックスハイライト、`Ctrl+S` 保存を備えたソースエディター。
+- ファイルツリー、シンタックスハイライト、ファイルの作成・削除、`Ctrl+S` 保存を備えたソースエディター。
 - Bokeh `--dev` によるライブリロード。Bokeh プロセスの再起動後に iframe を更新。
 - サーバーごとのメタデータ：タイトル、説明、使い方。
 - すぐに実行できる 2 つのサンプル。
@@ -148,6 +148,8 @@ Bokeh はアプリケーションディレクトリを監視します。ソー�
 
 - 左側：そのサーバーディレクトリの完全なファイルツリー。
 - 右側：Python、HTML、CSS、JavaScript、JSON、YAML、Markdown に対応した CodeMirror エディター。
+- **+** ボタンでファイルを作成できます。`lib/helpers.py` のようなネストしたパスにも対応し、サブディレクトリは自動作成されます。
+- ゴミ箱ボタンで現在開いているファイルを削除できます。削除前に確認があります。
 - `Ctrl+S` で現在のファイルを保存。
 - 未保存の変更を表示し、ファイル切り替えやウィンドウを閉じる前に確認します。
 - `theme.yaml` と `templates/index.html` は `AUTO`、`server.json` は `META` と表示されます。
@@ -185,7 +187,9 @@ POST   /api/servers/<name>/reload
 GET    /api/servers/<name>/logs
 GET    /api/servers/<name>/tree
 GET    /api/servers/<name>/file?path=...
+POST   /api/servers/<name>/file
 PUT    /api/servers/<name>/file
+DELETE /api/servers/<name>/file?path=...
 PUT    /api/servers/<name>/metadata
 ```
 

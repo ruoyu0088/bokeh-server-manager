@@ -164,6 +164,25 @@
       "editor.refreshTree": "Refresh file tree",
       "editor.save": "Save",
       "editor.files": "Files",
+      "editor.newFile": "New file",
+      "editor.deleteFile": "Delete file",
+      "editor.newFileTitle": "Create a file",
+      "editor.filePath": "File path",
+      "editor.filePathHint":
+        "Relative path inside this server. Subdirectories are created automatically.",
+      "editor.filePathPlaceholder": "helpers.py",
+      "editor.filePathRequired": "Enter a file path.",
+      "editor.creating": "Creating…",
+      "editor.deleting": "Deleting…",
+      "editor.created": "Created {path}.",
+      "editor.deleted": "Deleted {path}.",
+      "editor.createFailed": "Could not create file: {error}",
+      "editor.deleteFailed": "Could not delete file: {error}",
+      "editor.deleteConfirm": "Delete “{path}”? This cannot be undone.",
+      "editor.deleteConfirmDirty":
+        "Delete “{path}”? Unsaved changes will be lost. This cannot be undone.",
+      "editor.deleteGenerated":
+        "This generated theme file may be recreated by the manager on the next server start.",
       "editor.loadingFiles": "Loading files…",
       "editor.selectFile": "Select a file",
       "editor.selectFileHint":
@@ -355,6 +374,25 @@
       "editor.refreshTree": "刷新文件树",
       "editor.save": "保存",
       "editor.files": "文件",
+      "editor.newFile": "新建文件",
+      "editor.deleteFile": "删除文件",
+      "editor.newFileTitle": "创建文件",
+      "editor.filePath": "文件路径",
+      "editor.filePathHint":
+        "相对于当前服务器目录的路径，子目录会自动创建。",
+      "editor.filePathPlaceholder": "helpers.py",
+      "editor.filePathRequired": "请输入文件路径。",
+      "editor.creating": "正在创建…",
+      "editor.deleting": "正在删除…",
+      "editor.created": "已创建 {path}。",
+      "editor.deleted": "已删除 {path}。",
+      "editor.createFailed": "无法创建文件：{error}",
+      "editor.deleteFailed": "无法删除文件：{error}",
+      "editor.deleteConfirm": "删除“{path}”？此操作无法撤销。",
+      "editor.deleteConfirmDirty":
+        "删除“{path}”？未保存的修改会丢失，且此操作无法撤销。",
+      "editor.deleteGenerated":
+        "这是自动生成的主题文件，下次启动服务器时可能会被管理器重新创建。",
       "editor.loadingFiles": "正在加载文件…",
       "editor.selectFile": "选择一个文件",
       "editor.selectFileHint": "从左侧文件树选择文件开始编辑。",
@@ -555,6 +593,26 @@
       "editor.refreshTree": "ファイルツリーを更新",
       "editor.save": "保存",
       "editor.files": "ファイル",
+      "editor.newFile": "新規ファイル",
+      "editor.deleteFile": "ファイルを削除",
+      "editor.newFileTitle": "ファイルを作成",
+      "editor.filePath": "ファイルパス",
+      "editor.filePathHint":
+        "このサーバーディレクトリからの相対パスです。サブディレクトリは自動作成されます。",
+      "editor.filePathPlaceholder": "helpers.py",
+      "editor.filePathRequired": "ファイルパスを入力してください。",
+      "editor.creating": "作成中…",
+      "editor.deleting": "削除中…",
+      "editor.created": "{path} を作成しました。",
+      "editor.deleted": "{path} を削除しました。",
+      "editor.createFailed": "ファイルを作成できません：{error}",
+      "editor.deleteFailed": "ファイルを削除できません：{error}",
+      "editor.deleteConfirm":
+        "「{path}」を削除しますか？この操作は元に戻せません。",
+      "editor.deleteConfirmDirty":
+        "「{path}」を削除しますか？未保存の変更は失われ、この操作は元に戻せません。",
+      "editor.deleteGenerated":
+        "この生成テーマファイルは、次回のサーバー起動時にマネージャーによって再作成される場合があります。",
       "editor.loadingFiles": "ファイルを読み込み中…",
       "editor.selectFile": "ファイルを選択",
       "editor.selectFileHint":

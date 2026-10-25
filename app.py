@@ -161,6 +161,16 @@ def api_read_file(name: str) -> Response:
     return jsonify(manager.read_text_file(name, relative))
 
 
+@app.post("/api/servers/<name>/file")
+def api_create_file(name: str) -> Response:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Expected a JSON object with path and content."}), 400
+    relative = payload.get("path", "")
+    content = payload.get("content", "")
+    return jsonify(manager.create_text_file(name, relative, content)), 201
+
+
 @app.put("/api/servers/<name>/file")
 def api_write_file(name: str) -> Response:
     payload = request.get_json(silent=True)
@@ -169,6 +179,12 @@ def api_write_file(name: str) -> Response:
     relative = payload.get("path", "")
     content = payload.get("content", "")
     return jsonify(manager.write_text_file(name, relative, content))
+
+
+@app.delete("/api/servers/<name>/file")
+def api_delete_file(name: str) -> Response:
+    relative = request.args.get("path", "")
+    return jsonify(manager.delete_text_file(name, relative))
 
 
 @app.after_request

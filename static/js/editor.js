@@ -14,6 +14,7 @@
     lastSaved: "",
     dirty: false,
     saving: false,
+    deleting: false,
     loadToken: 0,
     editor: null,
     theme: "light",
@@ -29,6 +30,8 @@
     saveState: $("#save-state"),
     saveFile: $("#save-file"),
     refreshTree: $("#refresh-tree"),
+    newFile: $("#new-file"),
+    deleteFile: $("#delete-file"),
     fileTree: $("#file-tree"),
     fileCount: $("#file-count"),
     treeStatus: $("#tree-status"),
@@ -38,6 +41,7 @@
     cursorPos: $("#cursor-pos"),
     selectionInfo: $("#selection-info"),
     fileMode: $("#file-mode"),
+    modalRoot: $("#modal-root"),
     toastRoot: $("#toast-root"),
   };
 
@@ -286,6 +290,7 @@
     elements.fileMode.textContent = mode.label;
     elements.editorEmpty.classList.add("hidden");
     elements.editorHost.style.visibility = "visible";
+    elements.deleteFile.disabled = false;
     clearEditorError();
   }
 
@@ -295,6 +300,7 @@
     elements.metadataBadge.hidden = true;
     elements.fileMode.textContent = t("editor.plainText");
     elements.editorEmpty.classList.remove("hidden");
+    elements.deleteFile.disabled = true;
   }
 
   async function openFile(path) {
@@ -372,6 +378,153 @@
     }
   }
 
+  function openNewFileDialog() {
+    if (!state.serverName) return;
+    const closeModal = () => {
+      elements.modalRoot.replaceChildren();
+      document.removeEventListener("keydown", onKeyDown);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") closeModal();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    elements.modalRoot.innerHTML = `
+      <div class="modal-backdrop" data-modal-close="true">
+        <section class="modal narrow" role="dialog" aria-modal="true" aria-label="${escapeHtml(
+          t("editor.newFileTitle"),
+        )}">
+          <header class="modal-header">
+            <h3>${escapeHtml(t("editor.newFileTitle"))}</h3>
+            <button class="icon-button icon-button-small" type="button" data-modal-close="true" aria-label="${escapeHtml(
+              t("common.close"),
+            )}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal-body">
+            <div class="form-error" id="new-file-error"></div>
+            <form id="new-file-form" autocomplete="off">
+              <div class="form-field">
+                <label for="new-file-path">${escapeHtml(
+                  t("editor.filePath"),
+                )}</label>
+                <input id="new-file-path" maxlength="260" placeholder="${escapeHtml(
+                  t("editor.filePathPlaceholder"),
+                )}" required>
+                <div class="form-hint">${escapeHtml(
+                  t("editor.filePathHint"),
+                )}</div>
+              </div>
+            </form>
+          </div>
+          <footer class="modal-footer">
+            <button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+              t("common.cancel"),
+            )}</button>
+            <button class="button button-primary" id="create-file" type="submit" form="new-file-form">${escapeHtml(
+              t("common.create"),
+            )}</button>
+          </footer>
+        </section>
+      </div>
+    `;
+    elements.modalRoot.querySelectorAll("[data-modal-close]").forEach((node) => {
+      node.addEventListener("click", (event) => {
+        if (node.classList.contains("modal-backdrop") && event.target !== node) {
+          return;
+        }
+        closeModal();
+      });
+    });
+    const input = $("#new-file-path");
+    const errorBox = $("#new-file-error");
+    const createButton = $("#create-file");
+    $("#new-file-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorBox.classList.remove("visible");
+      const path = input.value.trim();
+      if (!path) {
+        errorBox.textContent = t("editor.filePathRequired");
+        errorBox.classList.add("visible");
+        input.focus();
+        return;
+      }
+      createButton.disabled = true;
+      createButton.textContent = t("editor.creating");
+      try {
+        const file = await apiFetch(
+          `/api/servers/${encodeURIComponent(state.serverName)}/file`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path, content: "" }),
+          },
+        );
+        closeModal();
+        toast(t("editor.created", { path: file.path }), "success");
+        await refreshTree();
+        await openFile(file.path);
+      } catch (error) {
+        errorBox.textContent = error.message;
+        errorBox.classList.add("visible");
+        createButton.disabled = false;
+        createButton.textContent = t("common.create");
+      }
+    });
+    input.focus();
+  }
+
+  async function deleteCurrentFile() {
+    if (!state.currentPath || state.deleting) return;
+    const pathToDelete = state.currentPath;
+    let message = state.dirty
+      ? t("editor.deleteConfirmDirty", { path: pathToDelete })
+      : t("editor.deleteConfirm", { path: pathToDelete });
+    if (
+      pathToDelete.endsWith("theme.yaml") ||
+      pathToDelete === "templates/index.html"
+    ) {
+      message += `\n\n${t("editor.deleteGenerated")}`;
+    }
+    if (!window.confirm(message)) return;
+    state.deleting = true;
+    elements.deleteFile.disabled = true;
+    elements.saveState.textContent = t("editor.deleting");
+    elements.saveState.className = "save-state dirty";
+    try {
+      await apiFetch(
+        `/api/servers/${encodeURIComponent(state.serverName)}/file?path=${encodeURIComponent(
+          pathToDelete,
+        )}`,
+        { method: "DELETE" },
+      );
+      state.currentPath = null;
+      state.currentFile = null;
+      state.lastSaved = "";
+      state.dirty = false;
+      state.saving = false;
+      state.editor.setValue("");
+      state.editor.clearHistory();
+      setNoFileState();
+      updateDirtyState();
+      updateCursor();
+      await refreshTree();
+      document.title = state.server
+        ? `${state.server.title || state.serverName} · ${state.serverName}`
+        : state.serverName || "Bokeh Server Manager";
+      toast(t("editor.deleted", { path: pathToDelete }), "success");
+    } catch (error) {
+      toast(
+        t("editor.deleteFailed", { error: error.message }),
+        "error",
+        8000,
+      );
+      elements.deleteFile.disabled = !state.currentPath;
+    } finally {
+      state.deleting = false;
+    }
+  }
+
   async function refreshTree({ openMain = false } = {}) {
     if (!state.serverName) return;
     try {
@@ -440,6 +593,7 @@
     } else {
       setNoFileState();
     }
+    elements.deleteFile.disabled = !state.currentPath;
     if (state.tree) {
       renderTreeFromState();
     } else if (state.serverName) {
@@ -468,6 +622,8 @@
         t("editor.serverLoadError", { error: error.message }),
       );
       elements.saveFile.disabled = true;
+      elements.newFile.disabled = true;
+      elements.deleteFile.disabled = true;
     }
   }
 
@@ -481,8 +637,11 @@
       elements.serverName.textContent = t("editor.noServerSubtitle");
       showEditorError(t("editor.noServerError"));
       elements.treeStatus.textContent = t("editor.noServer");
+      elements.newFile.disabled = true;
+      elements.deleteFile.disabled = true;
       return;
     }
+    elements.newFile.disabled = false;
     await loadServer();
     await refreshTree({ openMain: true });
     updateDirtyState();
@@ -491,6 +650,8 @@
 
   elements.saveFile.addEventListener("click", saveFile);
   elements.refreshTree.addEventListener("click", () => refreshTree());
+  elements.newFile.addEventListener("click", openNewFileDialog);
+  elements.deleteFile.addEventListener("click", deleteCurrentFile);
 
   document.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {

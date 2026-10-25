@@ -51,6 +51,14 @@ EXACT = {
         "目标不是普通文件。",
         "対象が通常のファイルではありません。",
     ),
+    "A file or directory with this path already exists.": (
+        "该路径下已存在文件或目录。",
+        "このパスにはファイルまたはディレクトリがすでに存在します。",
+    ),
+    "Only files can be deleted.": (
+        "只能删除文件。",
+        "削除できるのはファイルのみです。",
+    ),
     "server.json is too large (limit: 64 KB).": (
         "server.json 过大（上限 64 KB）。",
         "server.json が大きすぎます（上限 64 KB）。",
@@ -141,6 +149,16 @@ PATTERNS = (
         re.compile(r"^Could not save file: (.+)$"),
         "无法保存文件：{0}",
         "ファイルを保存できません：{0}",
+    ),
+    (
+        re.compile(r"^Could not create file: (.+)$"),
+        "无法创建文件：{0}",
+        "ファイルを作成できません：{0}",
+    ),
+    (
+        re.compile(r"^Could not delete file: (.+)$"),
+        "无法删除文件：{0}",
+        "ファイルを削除できません：{0}",
     ),
     (
         re.compile(r"^Could not save server\.json: (.+)$"),

@@ -18,7 +18,7 @@
 - 支持启动、重新载入、停止、编辑源码、编辑元信息、查看日志、在新窗口打开。
 - 可以从空白模板或交互式模板新建 Bokeh Server。
 - 管理器、编辑器和 Bokeh 页面均支持亮色 / 暗色主题。
-- 源码编辑器包含文件树、语法高亮和 `Ctrl+S` 保存。
+- 源码编辑器包含文件树、语法高亮、新建/删除文件和 `Ctrl+S` 保存。
 - Bokeh `--dev` 热重载；Bokeh 进程重启后管理器会刷新 iframe。
 - 每个服务器可配置标题、简介和使用说明等元信息。
 - 内置两个可直接运行的示例。
@@ -148,6 +148,8 @@ Bokeh 会监听应用目录。保存源码文件后：
 
 - 左侧：该服务器目录的完整文件树。
 - 右侧：CodeMirror 编辑器，支持 Python、HTML、CSS、JavaScript、JSON、YAML 和 Markdown。
+- 使用 **+** 按钮新建文件，支持 `lib/helpers.py` 这样的嵌套路径，子目录会自动创建。
+- 使用垃圾桶按钮删除当前打开的文件，删除前会要求确认。
 - `Ctrl+S` 保存当前文件。
 - 未保存的修改会标记，切换文件或关闭窗口前会提示。
 - `theme.yaml` 和 `templates/index.html` 标记为 `AUTO`；`server.json` 标记为 `META`。
@@ -185,7 +187,9 @@ POST   /api/servers/<name>/reload
 GET    /api/servers/<name>/logs
 GET    /api/servers/<name>/tree
 GET    /api/servers/<name>/file?path=...
+POST   /api/servers/<name>/file
 PUT    /api/servers/<name>/file
+DELETE /api/servers/<name>/file?path=...
 PUT    /api/servers/<name>/metadata
 ```
 
