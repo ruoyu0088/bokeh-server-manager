@@ -543,6 +543,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             raise ManagerError(runtime.error, 500) from exc
 
         deadline = time.monotonic() + START_TIMEOUT
+        exited_at: float | None = None
         while time.monotonic() < deadline:
             listener = _listener_pid(port)
             if listener is not None:
@@ -554,13 +555,20 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
                     runtime.started_at = time.time()
                     return runtime.to_dict()
             if runtime.process.poll() is not None and listener is None:
-                time.sleep(0.2)
+                if exited_at is None:
+                    exited_at = time.monotonic()
+                elif time.monotonic() - exited_at > 1.0:
+                    break
             time.sleep(0.15)
 
         log_tail = _tail_log(log_path)
+        exit_code = runtime.process.poll()
         _stop_runtime_locked(runtime)
         runtime.status = "error"
-        runtime.error = "Bokeh 服务启动超时。"
+        if exit_code is not None:
+            runtime.error = f"Bokeh 服务进程启动失败（退出码 {exit_code}）。"
+        else:
+            runtime.error = "Bokeh 服务启动超时。"
         message = runtime.error
         if log_tail.strip():
             message = f"{message}\n\n{log_tail[-4000:]}"
