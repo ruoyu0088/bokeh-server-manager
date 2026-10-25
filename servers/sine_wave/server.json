@@ -1,0 +1,5 @@
+{
+  "title": "Sine Wave Lab",
+  "description": "Adjust frequency, amplitude, and phase while the sine wave animates in real time.",
+  "usage": "1. Start the server from the sidebar.\n2. Choose a waveform and drag the sliders to shape the curve.\n3. Use Pause / Play to freeze or resume the animation.\n4. Save main.py in the editor to see Bokeh --dev reload the app."
+}

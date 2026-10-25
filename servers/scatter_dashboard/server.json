@@ -1,0 +1,5 @@
+{
+  "title": "Scatter Explorer",
+  "description": "Explore a synthetic point cloud, filter categories, and see the distribution update.",
+  "usage": "1. Start the server from the sidebar.\n2. Choose a category to filter the scatter plot.\n3. Change the marker size or regenerate the dataset.\n4. The dashed line and histogram update with the selection."
+}
