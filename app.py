@@ -35,10 +35,40 @@ def health() -> Response:
 def api_servers() -> Response:
     return jsonify(
         {
-            "servers": [server.to_dict() for server in manager.list_servers()],
+            "servers": manager.list_server_states(),
             "themes": ["light", "dark"],
         }
     )
+
+
+@app.get("/api/servers/<name>")
+def api_server(name: str) -> Response:
+    return jsonify(manager.server_state(name))
+
+
+@app.post("/api/servers/<name>/start")
+def api_start_server(name: str) -> Response:
+    payload = request.get_json(silent=True) or {}
+    theme = str(payload.get("theme", "light"))
+    return jsonify(manager.start_server(name, theme))
+
+
+@app.post("/api/servers/<name>/stop")
+def api_stop_server(name: str) -> Response:
+    return jsonify(manager.stop_server(name))
+
+
+@app.post("/api/servers/<name>/reload")
+def api_reload_server(name: str) -> Response:
+    payload = request.get_json(silent=True) or {}
+    theme = str(payload.get("theme", "light"))
+    return jsonify(manager.reload_server(name, theme))
+
+
+@app.get("/api/servers/<name>/logs")
+def api_server_logs(name: str) -> Response:
+    lines = request.args.get("lines", "300")
+    return jsonify({"logs": manager.logs_for_server(name, int(lines))})
 
 
 @app.get("/favicon.ico")
