@@ -561,15 +561,62 @@ svg {
 
 .sidebar-footer {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px 10px;
+  flex-direction: column;
+  gap: 3px;
   flex: 0 0 auto;
-  min-height: 44px;
   padding: 7px 12px;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 11px;
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.language-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 25px;
+  margin-left: auto;
+  padding: 1px 5px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--muted-strong);
+}
+
+.language-picker:hover {
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+.language-picker svg {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+}
+
+.language-picker select {
+  min-width: 0;
+  max-width: 112px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-strong);
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+}
+
+.language-picker select option {
+  background: var(--surface);
+  color: var(--text);
 }
 
 .theme-toggle {

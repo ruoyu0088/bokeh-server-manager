@@ -1,6 +1,7 @@
 (() => {
   "use strict";
 
+  const { t, setLanguage, getLanguage, applyTranslations } = window.BSM_I18N;
   const $ = (selector, root = document) => root.querySelector(selector);
   const STORAGE = {
     theme: "bsm-theme",
@@ -50,6 +51,7 @@
     themeToggle: $("#theme-toggle"),
     themeIcon: $("#theme-icon"),
     themeLabel: $("#theme-label"),
+    languageSelect: $("#language-select"),
     tabs: $("#tabs"),
     panes: $("#panes"),
     emptyState: $("#empty-state"),
@@ -69,15 +71,9 @@
   }
 
   function statusLabel(status) {
-    return (
-      {
-        running: "Running",
-        starting: "Starting",
-        stopping: "Stopping",
-        error: "Error",
-        stopped: "Stopped",
-      }[status] || status
-    );
+    const key = `status.${status}`;
+    const label = t(key);
+    return label === key ? status : label;
   }
 
   function statusClass(status) {
@@ -88,7 +84,7 @@
   }
 
   function themeName(theme) {
-    return theme === "dark" ? "Dark" : "Light";
+    return t(theme === "dark" ? "theme.dark" : "theme.light");
   }
 
   function themeIcon(theme) {
@@ -101,11 +97,13 @@
 
   function formatUptime(seconds) {
     if (!seconds && seconds !== 0) return "";
-    if (seconds < 60) return `${Math.max(1, Math.round(seconds))}s`;
+    if (seconds < 60) {
+      return t("uptime.seconds", { n: Math.max(1, Math.round(seconds)) });
+    }
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 60) return t("uptime.minutes", { n: minutes });
     const hours = Math.floor(minutes / 60);
-    return `${hours}h ${minutes % 60}m`;
+    return t("uptime.hours", { h: hours, m: minutes % 60 });
   }
 
   function serverByName(name) {
@@ -184,15 +182,23 @@
     });
   }
 
+  function renderManagerStatus() {
+    elements.managerStatus.classList.toggle("offline", !state.online);
+    elements.managerStatus.innerHTML = state.online
+      ? `<span class="status-dot status-running"></span><span>${escapeHtml(
+          t("sidebar.connected"),
+        )}</span>`
+      : `<span class="status-dot status-error"></span><span>${escapeHtml(
+          t("sidebar.offline"),
+        )}</span>`;
+  }
+
   function setManagerStatus(online) {
     if (online === state.online) return;
     state.online = online;
-    elements.managerStatus.classList.toggle("offline", !online);
-    elements.managerStatus.innerHTML = online
-      ? '<span class="status-dot status-running"></span><span>Connected</span>'
-      : '<span class="status-dot status-error"></span><span>Manager offline</span>';
+    renderManagerStatus();
     if (!online) {
-      toast("Cannot reach the manager backend. Check that the manager is still running.", "error", 6000);
+      toast(t("error.cannotReach"), "error", 6000);
     }
   }
 
@@ -202,10 +208,14 @@
       response = await fetch(url, {
         cache: "no-store",
         ...options,
+        headers: {
+          "X-BSM-Lang": getLanguage(),
+          ...(options.headers || {}),
+        },
       });
     } catch {
       setManagerStatus(false);
-      throw new Error("Network request failed.");
+      throw new Error(t("error.network"));
     }
     const contentType = response.headers.get("content-type") || "";
     const payload = contentType.includes("application/json")
@@ -213,7 +223,9 @@
       : {};
     if (!response.ok) {
       setManagerStatus(true);
-      throw new Error(payload.error || `Request failed (${response.status}).`);
+      throw new Error(
+        payload.error || t("error.requestFailed", { status: response.status }),
+      );
     }
     setManagerStatus(true);
     return payload;
@@ -241,21 +253,29 @@
     document.documentElement.dataset.theme = normalized;
     localStorage.setItem(STORAGE.theme, normalized);
     elements.themeIcon.innerHTML = normalized === "dark" ? ICONS.sun : ICONS.moon;
-    elements.themeLabel.textContent = `${themeName(normalized)} theme`;
-    elements.themeToggle.title =
-      normalized === "dark" ? "Switch to light theme" : "Switch to dark theme";
+    elements.themeLabel.textContent = t("theme.label", {
+      theme: themeName(normalized),
+    });
+    elements.themeToggle.title = t(
+      normalized === "dark" ? "theme.switchToLight" : "theme.switchToDark",
+    );
     if (notify) {
       const stale = state.servers.filter(
         (server) => server.status === "running" && server.theme !== normalized,
       );
       if (stale.length > 0) {
         toast(
-          `Interface theme changed. ${stale.length} running server${stale.length === 1 ? "" : "s"} will use it after the next reload or restart.`,
+          t(stale.length === 1 ? "theme.staleOne" : "theme.staleMany", {
+            count: stale.length,
+          }),
           "info",
           6500,
         );
       } else {
-        toast(`${themeName(normalized)} theme enabled.`, "success");
+        toast(
+          t("theme.changed", { theme: themeName(normalized) }),
+          "success",
+        );
       }
     }
   }
@@ -275,16 +295,17 @@
   function themeChip(server) {
     if (!server.theme) return "";
     const mismatch = server.theme !== state.theme ? " mismatch" : "";
-    return `<span class="theme-chip${mismatch}" title="Theme used when this server was started">${themeIcon(
-      server.theme,
-    )}${themeName(server.theme)}</span>`;
+    return `<span class="theme-chip${mismatch}" title="${escapeHtml(
+      t("theme.chipTitle"),
+    )}">${themeIcon(server.theme)}${themeName(server.theme)}</span>`;
   }
 
   function renderSidebar() {
     elements.serverCount.textContent = String(state.servers.length);
     if (state.servers.length === 0) {
-      elements.serverList.innerHTML =
-        '<div class="sidebar-empty">No Bokeh servers yet.<br>Add an application under <code>servers/</code> or create one here.</div>';
+      elements.serverList.innerHTML = `<div class="sidebar-empty">${t(
+        "sidebar.empty",
+      )}</div>`;
       return;
     }
 
@@ -315,9 +336,10 @@
       if (server.status === "running" && server.uptime) {
         metaParts.push(`<span>${formatUptime(server.uptime)}</span>`);
       }
-      const errorText = server.valid === false
-        ? server.error || "This directory is not a valid Bokeh directory application."
-        : server.error;
+      const errorText =
+        server.valid === false
+          ? server.error || t("server.invalid")
+          : server.error;
       const errorHtml = errorText
         ? `<div class="server-error" title="${escapeHtml(errorText)}">${escapeHtml(
             errorText,
@@ -328,9 +350,14 @@
             server.description,
           )}</div>`
         : "";
+      const metadataTitle = server.metadata_error
+        ? t("server.actions.metadataError")
+        : t("server.actions.metadata");
 
       card.innerHTML = `
-        <div class="server-card-main" data-action="open" title="Open server tab">
+        <div class="server-card-main" data-action="open" title="${escapeHtml(
+          t("server.actions.openTab"),
+        )}">
           <span class="status-dot ${statusClass(status)}"></span>
           <div class="server-card-title">
             <span class="server-name">${escapeHtml(title)}</span>
@@ -344,32 +371,42 @@
           </div>
         </div>
         <div class="server-actions">
-          <button class="icon-button" type="button" data-action="start" title="Start" aria-label="Start ${escapeHtml(
-            title,
+          <button class="icon-button" type="button" data-action="start" title="${escapeHtml(
+            t("server.actions.start"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.start")}: ${title}`,
           )}" ${canStart && !busy ? "" : "disabled"}>${ICONS.play}</button>
-          <button class="icon-button" type="button" data-action="reload" title="Reload: restart the process and apply the current theme" aria-label="Reload ${escapeHtml(
-            title,
+          <button class="icon-button" type="button" data-action="reload" title="${escapeHtml(
+            t("server.actions.reload"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.reload")}: ${title}`,
           )}" ${canReload && !busy ? "" : "disabled"}>${ICONS.reload}</button>
-          <button class="icon-button danger" type="button" data-action="stop" title="Stop" aria-label="Stop ${escapeHtml(
-            title,
+          <button class="icon-button danger" type="button" data-action="stop" title="${escapeHtml(
+            t("server.actions.stop"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.stop")}: ${title}`,
           )}" ${canStop && !busy ? "" : "disabled"}>${ICONS.stop}</button>
-          <button class="icon-button" type="button" data-action="edit" title="Edit source" aria-label="Edit source for ${escapeHtml(
-            title,
+          <button class="icon-button" type="button" data-action="edit" title="${escapeHtml(
+            t("server.actions.edit"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.edit")}: ${title}`,
           )}" ${busy ? "disabled" : ""}>${ICONS.edit}</button>
-          <button class="icon-button${server.metadata_error ? " warn" : ""}" type="button" data-action="metadata" title="${
-            server.metadata_error
-              ? "Server information (server.json has an error)"
-              : "Server information"
-          }" aria-label="Edit server information for ${escapeHtml(
-            title,
+          <button class="icon-button${server.metadata_error ? " warn" : ""}" type="button" data-action="metadata" title="${escapeHtml(
+            metadataTitle,
+          )}" aria-label="${escapeHtml(
+            `${metadataTitle}: ${title}`,
           )}" ${busy ? "disabled" : ""}>${ICONS.info}</button>
-          <button class="icon-button" type="button" data-action="logs" title="View logs" aria-label="View logs for ${escapeHtml(
-            title,
+          <button class="icon-button" type="button" data-action="logs" title="${escapeHtml(
+            t("server.actions.logs"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.logs")}: ${title}`,
           )}">${ICONS.logs}</button>
-          <button class="icon-button" type="button" data-action="external" title="Open in a new window" aria-label="Open ${escapeHtml(
-            title,
-          )} in a new window" ${server.status === "running" ? "" : "disabled"}>${ICONS.external}</button>
-          <span class="action-label">${busy ? "Working…" : ""}</span>
+          <button class="icon-button" type="button" data-action="external" title="${escapeHtml(
+            t("server.actions.external"),
+          )}" aria-label="${escapeHtml(
+            `${t("server.actions.external")}: ${title}`,
+          )}" ${server.status === "running" ? "" : "disabled"}>${ICONS.external}</button>
+          <span class="action-label">${busy ? t("server.actions.working") : ""}</span>
         </div>
       `;
       fragment.appendChild(card);
@@ -432,9 +469,9 @@
     tab.innerHTML = `
       <span class="status-dot ${statusClass(server.status)}"></span>
       <span class="tab-label">${escapeHtml(title)}</span>
-      <button class="tab-close" type="button" aria-label="Close ${escapeHtml(
-        title,
-      )} tab">${ICONS.close}</button>
+      <button class="tab-close" type="button" aria-label="${escapeHtml(
+        t("server.closeTab", { title }),
+      )}">${ICONS.close}</button>
     `;
     tab.addEventListener("click", () => {
       activateTab(name);
@@ -458,7 +495,7 @@
     pane.dataset.lastStatus = server.status;
     pane.dataset.lastPid = server.pid ? String(server.pid) : "";
     const iframe = document.createElement("iframe");
-    iframe.title = `${title} Bokeh application`;
+    iframe.title = t("server.iframeTitle", { title });
     iframe.src = server.url;
     iframe.dataset.serverUrl = server.url;
     iframe.allow = "fullscreen";
@@ -466,8 +503,8 @@
     overlay.className = "frame-overlay";
     overlay.innerHTML = `
       <div class="spinner" aria-hidden="true"></div>
-      <strong>Connecting to ${escapeHtml(title)}</strong>
-      <small>The Bokeh UI will appear here when the server is ready.</small>
+      <strong>${escapeHtml(t("frame.connecting", { title }))}</strong>
+      <small>${escapeHtml(t("frame.connectingDetail"))}</small>
     `;
     iframe.addEventListener("load", () => {
       if (pane.dataset.blockLoad !== "true") hideOverlay(pane);
@@ -535,7 +572,7 @@
     const label = $(".tab-label", entry.tab);
     if (label) label.textContent = title;
     entry.tab.title = `${title} · ${server.name}`;
-    entry.iframe.title = `${title} Bokeh application`;
+    entry.iframe.title = t("server.iframeTitle", { title });
 
     const lastPid = entry.pane.dataset.lastPid || "";
     const currentPid = server.pid ? String(server.pid) : "";
@@ -548,8 +585,8 @@
       setOverlay(
         entry.pane,
         "loading",
-        `Connecting to ${title}`,
-        "The server process changed. Reloading the Bokeh UI.",
+        t("frame.connecting", { title }),
+        t("frame.processChanged"),
       );
     } else if (pidChanged && server.status === "running") {
       reloadedForPid = true;
@@ -557,8 +594,8 @@
       setOverlay(
         entry.pane,
         "loading",
-        `${title} is reloading`,
-        "Source changes were picked up by Bokeh --dev. Refreshing the UI.",
+        t("frame.reloading", { title }),
+        t("frame.reloadingDetail"),
       );
     }
     if (currentPid) entry.pane.dataset.lastPid = currentPid;
@@ -566,15 +603,15 @@
       setOverlay(
         entry.pane,
         "error",
-        `${title} is unavailable`,
-        server.error || "Check the server logs, fix the problem, then reload.",
+        t("frame.unavailable", { title }),
+        server.error || t("frame.unavailableDetail"),
       );
     } else if (server.status === "starting") {
       setOverlay(
         entry.pane,
         "loading",
-        `${title} is starting`,
-        "The Bokeh process is preparing. The UI will appear automatically.",
+        t("frame.starting", { title }),
+        t("frame.startingDetail"),
       );
     } else if (server.status === "running") {
       if (!staleUrl && !reloadedForPid && previousStatus === "error") {
@@ -582,8 +619,8 @@
         setOverlay(
           entry.pane,
           "loading",
-          `${title} is back`,
-          "Reloading the Bokeh UI.",
+          t("frame.back", { title }),
+          t("frame.backDetail"),
         );
       }
       const overlay = $(".frame-overlay", entry.pane);
@@ -644,7 +681,9 @@
         syncTabs();
         if (!state.restored) restoreTabs();
       } catch (error) {
-        if (!silent) toast(error.message || "Failed to refresh servers.", "error", 6000);
+        if (!silent) {
+          toast(error.message || t("error.refreshFailed"), "error", 6000);
+        }
       } finally {
         state.fetching = false;
         state.fetchPromise = null;
@@ -668,13 +707,19 @@
       );
       const known = serverByName(name) || { name };
       const started = { ...known, ...data };
-      toast(`Started “${serverTitle(started)}” on port ${data.port}.`, "success");
+      toast(
+        t("action.started", {
+          title: serverTitle(started),
+          port: data.port,
+        }),
+        "success",
+      );
       openTab(started);
       await refreshServers({ silent: true });
       const server = serverByName(name);
       if (server) openTab(server);
     } catch (error) {
-      toast(`Start failed: ${error.message}`, "error", 9000);
+      toast(t("action.startFailed", { error: error.message }), "error", 9000);
       await refreshServers({ silent: true });
       showLogs(name);
     } finally {
@@ -692,10 +737,15 @@
         method: "POST",
       });
       closeTab(name);
-      toast(`Stopped “${serverTitle(serverByName(name) || { name })}”.`, "success");
+      toast(
+        t("action.stopped", {
+          title: serverTitle(serverByName(name) || { name }),
+        }),
+        "success",
+      );
       await refreshServers({ silent: true });
     } catch (error) {
-      toast(`Stop failed: ${error.message}`, "error", 7000);
+      toast(t("action.stopFailed", { error: error.message }), "error", 7000);
     } finally {
       state.busy.delete(name);
       renderSidebar();
@@ -711,8 +761,10 @@
       setOverlay(
         entry.pane,
         "loading",
-        `Reloading ${serverTitle(serverByName(name) || { name })}`,
-        "The process will restart with the current interface theme.",
+        t("action.reloading", {
+          title: serverTitle(serverByName(name) || { name }),
+        }),
+        t("action.reloadingDetail"),
       );
     }
     try {
@@ -725,7 +777,10 @@
         },
       );
       toast(
-        `Reloaded “${serverTitle(serverByName(name) || { name })}” on port ${data.port}.`,
+        t("action.reloaded", {
+          title: serverTitle(serverByName(name) || { name }),
+          port: data.port,
+        }),
         "success",
       );
       if (entry && data.url) {
@@ -735,15 +790,15 @@
         setOverlay(
           entry.pane,
           "loading",
-          "Reconnecting",
-          "The process restarted. Loading the updated Bokeh UI.",
+          t("action.reconnect"),
+          t("action.reconnectDetail"),
         );
       }
       await refreshServers({ silent: true });
       const server = serverByName(name);
       if (server) openTab(server);
     } catch (error) {
-      toast(`Reload failed: ${error.message}`, "error", 9000);
+      toast(t("action.reloadFailed", { error: error.message }), "error", 9000);
       await refreshServers({ silent: true });
       showLogs(name);
     } finally {
@@ -760,7 +815,7 @@
       "popup=yes,width=1280,height=860",
     );
     if (!editor) {
-      toast("The browser blocked the editor window. Allow pop-ups and try again.", "error", 7000);
+      toast(t("action.popupBlocked"), "error", 7000);
     }
   }
 
@@ -780,7 +835,9 @@
         )}">
           <header class="modal-header">
             <h3>${escapeHtml(title)}</h3>
-            <button class="icon-button icon-button-small" type="button" data-modal-close="true" aria-label="Close">${ICONS.close}</button>
+            <button class="icon-button icon-button-small" type="button" data-modal-close="true" aria-label="${escapeHtml(
+              t("common.close"),
+            )}">${ICONS.close}</button>
           </header>
           <div class="modal-body">${body}</div>
           ${footer ? `<footer class="modal-footer">${footer}</footer>` : ""}
@@ -812,39 +869,47 @@
       <div class="form-error" id="new-server-error"></div>
       <form id="new-server-form" autocomplete="off">
         <div class="form-field">
-          <label for="new-server-name">Directory name</label>
+          <label for="new-server-name">${escapeHtml(t("new.directory"))}</label>
           <input id="new-server-name" maxlength="64" placeholder="my_bokeh_app" required>
-          <div class="form-hint">Letters, numbers, underscores, or hyphens. The app is created under <code>servers/&lt;name&gt;</code>.</div>
+          <div class="form-hint">${t("new.directoryHint")}</div>
         </div>
         <div class="form-field">
-          <label for="new-server-title">Title</label>
-          <input id="new-server-title" maxlength="120" placeholder="My Bokeh app">
-          <div class="form-hint">Shown in the sidebar and tab. Defaults to the directory name.</div>
+          <label for="new-server-title">${escapeHtml(t("new.name"))}</label>
+          <input id="new-server-title" maxlength="120" placeholder="${escapeHtml(
+            t("new.namePlaceholder"),
+          )}">
+          <div class="form-hint">${escapeHtml(t("new.nameHint"))}</div>
         </div>
         <div class="form-field">
-          <label>Template</label>
+          <label>${escapeHtml(t("new.template"))}</label>
           <div class="template-grid">
             <label class="template-option selected">
               <input type="radio" name="new-template" value="blank" checked>
-              <strong>Blank</strong>
-              <span>A minimal Bokeh page. A good starting point for custom apps.</span>
+              <strong>${escapeHtml(t("new.blank"))}</strong>
+              <span>${escapeHtml(t("new.blankHint"))}</span>
             </label>
             <label class="template-option">
               <input type="radio" name="new-template" value="interactive">
-              <strong>Interactive</strong>
-              <span>A sine-wave plot with a slider and a server-side callback.</span>
+              <strong>${escapeHtml(t("new.interactive"))}</strong>
+              <span>${escapeHtml(t("new.interactiveHint"))}</span>
             </label>
           </div>
         </div>
-        <label class="checkbox-row"><input type="checkbox" id="new-server-start" checked> Start immediately</label>
+        <label class="checkbox-row"><input type="checkbox" id="new-server-start" checked> ${escapeHtml(
+          t("new.start"),
+        )}</label>
       </form>
     `;
     openModal({
-      title: "New Bokeh server",
+      title: t("new.title"),
       body,
       footer:
-        '<button class="button button-ghost" type="button" data-modal-close="true">Cancel</button>' +
-        '<button class="button button-primary" id="create-server" type="submit" form="new-server-form">Create</button>',
+        `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+          t("common.cancel"),
+        )}</button>` +
+        `<button class="button button-primary" id="create-server" type="submit" form="new-server-form">${escapeHtml(
+          t("common.create"),
+        )}</button>`,
       onMount: (close) => {
         const form = $("#new-server-form");
         const errorBox = $("#new-server-error");
@@ -864,8 +929,7 @@
           errorBox.classList.remove("visible");
           const name = nameInput.value.trim();
           if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(name)) {
-            errorBox.textContent =
-              "Use letters, numbers, underscores, or hyphens. The name must start with a letter or number.";
+            errorBox.textContent = t("new.invalidName");
             errorBox.classList.add("visible");
             nameInput.focus();
             return;
@@ -873,7 +937,7 @@
           const template = $('input[name="new-template"]:checked', form).value;
           const start = $("#new-server-start").checked;
           createButton.disabled = true;
-          createButton.textContent = "Creating…";
+          createButton.textContent = t("new.creating");
           try {
             const state = await apiFetch("/api/servers", {
               method: "POST",
@@ -884,7 +948,10 @@
                 template,
               }),
             });
-            toast(`Created “${state.title || name}”.`, "success");
+            toast(
+              t("new.created", { title: state.title || name }),
+              "success",
+            );
             close();
             await refreshServers({ silent: true });
             if (start) await startServer(name);
@@ -892,7 +959,7 @@
             errorBox.textContent = error.message;
             errorBox.classList.add("visible");
             createButton.disabled = false;
-            createButton.textContent = "Create";
+            createButton.textContent = t("common.create");
           }
         });
         nameInput.focus();
@@ -905,46 +972,60 @@
     if (!server) return;
     const title = serverTitle(server);
     const warning = server.metadata_error
-      ? `<div class="form-notice"><strong>server.json needs attention.</strong> ${escapeHtml(
-          server.metadata_error,
-        )} Saving this form will replace it with valid metadata.</div>`
+      ? `<div class="form-notice"><strong>${escapeHtml(
+          t("metadata.warningTitle"),
+        )}</strong> ${escapeHtml(
+          t("metadata.warningBody", { error: server.metadata_error }),
+        )}</div>`
       : "";
     const body = `
       ${warning}
       <div class="form-error" id="metadata-error"></div>
       <form id="metadata-form" autocomplete="off">
         <div class="form-field">
-          <label for="metadata-title">Title</label>
+          <label for="metadata-title">${escapeHtml(
+            t("metadata.titleField"),
+          )}</label>
           <input id="metadata-title" maxlength="120" value="${escapeHtml(
             server.title || "",
           )}" placeholder="${escapeHtml(name)}">
-          <div class="form-hint">Used in the sidebar and tab. Falls back to the directory name when empty.</div>
+          <div class="form-hint">${escapeHtml(t("metadata.titleHint"))}</div>
         </div>
         <div class="form-field">
-          <label for="metadata-description">Description</label>
+          <label for="metadata-description">${escapeHtml(
+            t("metadata.description"),
+          )}</label>
           <textarea id="metadata-description" rows="2" maxlength="400">${escapeHtml(
             server.description || "",
           )}</textarea>
-          <div class="form-hint">A short summary shown under the server title.</div>
+          <div class="form-hint">${escapeHtml(
+            t("metadata.descriptionHint"),
+          )}</div>
         </div>
         <div class="form-field">
-          <label for="metadata-usage">Usage</label>
+          <label for="metadata-usage">${escapeHtml(t("metadata.usage"))}</label>
           <textarea id="metadata-usage" rows="7">${escapeHtml(
             server.usage || "",
           )}</textarea>
-          <div class="form-hint">Shown in this dialog. Plain text; line breaks are preserved.</div>
+          <div class="form-hint">${escapeHtml(t("metadata.usageHint"))}</div>
         </div>
-        <div class="form-hint">Directory: <code>${escapeHtml(
-          name,
-        )}</code> · Saved to <code>server.json</code></div>
+        <div class="form-hint">${escapeHtml(
+          t("metadata.directory"),
+        )} <code>${escapeHtml(name)}</code> · ${escapeHtml(
+          t("metadata.savedTo"),
+        )}</div>
       </form>
     `;
     openModal({
-      title: `Server information · ${title}`,
+      title: t("metadata.title", { title }),
       body,
       footer:
-        '<button class="button button-ghost" type="button" data-modal-close="true">Cancel</button>' +
-        '<button class="button button-primary" id="save-metadata" type="submit" form="metadata-form">Save</button>',
+        `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+          t("common.cancel"),
+        )}</button>` +
+        `<button class="button button-primary" id="save-metadata" type="submit" form="metadata-form">${escapeHtml(
+          t("common.save"),
+        )}</button>`,
       onMount: (close) => {
         const form = $("#metadata-form");
         const errorBox = $("#metadata-error");
@@ -953,7 +1034,7 @@
           event.preventDefault();
           errorBox.classList.remove("visible");
           saveButton.disabled = true;
-          saveButton.textContent = "Saving…";
+          saveButton.textContent = t("metadata.saving");
           try {
             await apiFetch(
               `/api/servers/${encodeURIComponent(name)}/metadata`,
@@ -967,14 +1048,14 @@
                 }),
               },
             );
-            toast("Server information saved.", "success");
+            toast(t("metadata.saved"), "success");
             close();
             await refreshServers({ silent: true });
           } catch (error) {
             errorBox.textContent = error.message;
             errorBox.classList.add("visible");
             saveButton.disabled = false;
-            saveButton.textContent = "Save";
+            saveButton.textContent = t("common.save");
           }
         });
         $("#metadata-title").focus();
@@ -984,12 +1065,20 @@
 
   async function showLogs(name) {
     const close = openModal({
-      title: `Logs · ${name}`,
-      body: '<pre class="log-view" id="log-view">Loading logs…</pre>',
+      title: t("logs.title", { name }),
+      body: `<pre class="log-view" id="log-view">${escapeHtml(
+        t("logs.loading"),
+      )}</pre>`,
       footer:
-        '<button class="button button-ghost" type="button" id="copy-logs">Copy</button>' +
-        '<button class="button button-ghost" type="button" id="refresh-logs">Refresh</button>' +
-        '<button class="button button-primary" type="button" data-modal-close="true">Close</button>',
+        `<button class="button button-ghost" type="button" id="copy-logs">${escapeHtml(
+          t("logs.copy"),
+        )}</button>` +
+        `<button class="button button-ghost" type="button" id="refresh-logs">${escapeHtml(
+          t("logs.refresh"),
+        )}</button>` +
+        `<button class="button button-primary" type="button" data-modal-close="true">${escapeHtml(
+          t("logs.close"),
+        )}</button>`,
       onMount: () => {
         const logView = $("#log-view");
         const load = async () => {
@@ -997,25 +1086,48 @@
             const data = await apiFetch(
               `/api/servers/${encodeURIComponent(name)}/logs?lines=500`,
             );
-            logView.textContent = data.logs || "No logs yet.";
+            logView.textContent = data.logs || t("logs.empty");
             logView.scrollTop = logView.scrollHeight;
           } catch (error) {
-            logView.textContent = `Failed to read logs: ${error.message}`;
+            logView.textContent = t("logs.readFailed", {
+              error: error.message,
+            });
           }
         };
         $("#refresh-logs").addEventListener("click", load);
         $("#copy-logs").addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(logView.textContent || "");
-            toast("Logs copied.", "success");
+            toast(t("logs.copied"), "success");
           } catch {
-            toast("Copy failed. Select the text manually.", "error");
+            toast(t("logs.copyFailed"), "error");
           }
         });
         load();
       },
     });
     return close;
+  }
+
+  function applyLanguage() {
+    elements.languageSelect.value = getLanguage();
+    applyTranslations();
+    applyTheme(state.theme, false);
+    renderManagerStatus();
+    for (const [name, entry] of state.tabs) {
+      const server = serverByName(name);
+      const title = server ? serverTitle(server) : name;
+      entry.tab.title = `${title} · ${name}`;
+      entry.iframe.title = t("server.iframeTitle", { title });
+      const closeButton = $(".tab-close", entry.tab);
+      closeButton?.setAttribute(
+        "aria-label",
+        t("server.closeTab", { title }),
+      );
+    }
+    renderSidebar();
+    syncTabs();
+    updateEmptyState();
   }
 
   function handleServerAction(name, action) {
@@ -1041,6 +1153,10 @@
   });
   elements.refreshServers.addEventListener("click", () => refreshServers());
   elements.newServer.addEventListener("click", showNewServerDialog);
+  elements.languageSelect.addEventListener("change", (event) => {
+    setLanguage(event.target.value);
+    applyLanguage();
+  });
 
   elements.serverList.addEventListener("click", (event) => {
     const actionNode = event.target.closest("[data-action]");
@@ -1061,9 +1177,19 @@
     if (!document.hidden) refreshServers({ silent: true });
   });
 
+  window.addEventListener("storage", (event) => {
+    if (event.key === "bsm-lang" && event.newValue) {
+      setLanguage(event.newValue);
+      applyLanguage();
+    }
+  });
+
   initTheme();
   initSidebar();
   initSidebarResizer();
+  elements.languageSelect.value = getLanguage();
+  applyTranslations();
+  renderManagerStatus();
   renderSidebar();
   updateEmptyState();
   refreshServers();

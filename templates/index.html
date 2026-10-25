@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="app-shell" id="app-shell">
-    <aside class="sidebar" id="sidebar" aria-label="Server management sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Server management sidebar" data-i18n-aria-label="sidebar.aria">
       <div class="sidebar-header">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">
@@ -17,22 +17,22 @@
           </span>
           <span class="brand-title">Bokeh Server Manager</span>
         </div>
-        <button class="icon-button icon-button-small" id="sidebar-collapse" type="button" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar">
+        <button class="icon-button icon-button-small" id="sidebar-collapse" type="button" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar" data-i18n-title="sidebar.collapseTitle" data-i18n-aria-label="sidebar.collapseTitle">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
         </button>
       </div>
 
       <div class="sidebar-toolbar">
         <div class="sidebar-heading">
-          <h2>Bokeh Servers</h2>
+          <h2 data-i18n="sidebar.servers">Bokeh Servers</h2>
           <span class="server-count" id="server-count">0</span>
         </div>
         <div class="sidebar-tools">
-          <button class="button button-primary button-compact" id="new-server-btn" type="button" title="Create a new Bokeh server">
+          <button class="button button-primary button-compact" id="new-server-btn" type="button" title="Create a new Bokeh server" data-i18n-title="sidebar.newTitle">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            New
+            <span data-i18n="sidebar.new">New</span>
           </button>
-          <button class="icon-button icon-button-small" id="refresh-servers" type="button" title="Refresh server list" aria-label="Refresh server list">
+          <button class="icon-button icon-button-small" id="refresh-servers" type="button" title="Refresh server list" aria-label="Refresh server list" data-i18n-title="sidebar.refreshTitle" data-i18n-aria-label="sidebar.refreshTitle">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
           </button>
         </div>
@@ -41,23 +41,35 @@
       <div class="server-list" id="server-list" aria-live="polite"></div>
 
       <div class="sidebar-footer">
-        <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle light / dark theme">
-          <span id="theme-icon" aria-hidden="true"></span>
-          <span id="theme-label">Light theme</span>
-        </button>
-        <div class="connection-status" id="manager-status" title="Manager connection status">
-          <span class="status-dot status-running"></span>
-          <span>Connected</span>
+        <div class="footer-row">
+          <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle light / dark theme" data-i18n-title="theme.toggleTitle">
+            <span id="theme-icon" aria-hidden="true"></span>
+            <span id="theme-label">Light theme</span>
+          </button>
+          <label class="language-picker" title="Language" data-i18n-title="sidebar.language">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+            <select id="language-select" aria-label="Language" data-i18n-aria-label="sidebar.language">
+              <option value="en">English</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="ja">日本語</option>
+            </select>
+          </label>
         </div>
-        <span class="shortcut-hint" title="Show / hide sidebar">Ctrl+B</span>
+        <div class="footer-row">
+          <div class="connection-status" id="manager-status" title="Manager connection status" data-i18n-title="sidebar.connectionTitle">
+            <span class="status-dot status-running"></span>
+            <span data-i18n="sidebar.connected">Connected</span>
+          </div>
+          <span class="shortcut-hint" title="Show / hide sidebar" data-i18n-title="sidebar.shortcutTitle">Ctrl+B</span>
+        </div>
       </div>
 
-      <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to resize sidebar; double-click to reset" role="separator" aria-orientation="vertical"></div>
+      <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to resize sidebar; double-click to reset" data-i18n-title="sidebar.resizeTitle" role="separator" aria-orientation="vertical"></div>
     </aside>
 
     <main class="main">
       <div class="tabbar" id="tabbar">
-        <div class="tabs" id="tabs" role="tablist" aria-label="Open Bokeh servers"></div>
+        <div class="tabs" id="tabs" role="tablist" aria-label="Open Bokeh servers" data-i18n-aria-label="tabs.aria"></div>
         <div class="tabbar-spacer" aria-hidden="true"></div>
       </div>
       <div class="workspace" id="workspace">
@@ -68,9 +80,9 @@
               <span class="bubble bubble-b"></span>
               <span class="bubble bubble-c"></span>
             </div>
-            <h1>Open a Bokeh server</h1>
-            <p>Start a server from the sidebar and its UI will open here in a tab. You can keep several servers open at once.</p>
-            <p class="empty-shortcut">Press <kbd>Ctrl</kbd> + <kbd>B</kbd> to show or hide the sidebar.</p>
+            <h1 data-i18n="empty.title">Open a Bokeh server</h1>
+            <p data-i18n="empty.body">Start a server from the sidebar and its UI will open here in a tab. You can keep several servers open at once.</p>
+            <p class="empty-shortcut" data-i18n-html="empty.shortcut">Press <kbd>Ctrl</kbd> + <kbd>B</kbd> to show or hide the sidebar.</p>
           </div>
         </div>
         <div class="panes" id="panes"></div>
@@ -78,13 +90,14 @@
     </main>
   </div>
 
-  <button class="sidebar-handle" id="sidebar-handle" type="button" title="Show sidebar (Ctrl+B)" aria-label="Show sidebar" hidden>
+  <button class="sidebar-handle" id="sidebar-handle" type="button" title="Show sidebar (Ctrl+B)" aria-label="Show sidebar" data-i18n-title="sidebar.expandTitle" data-i18n-aria-label="sidebar.expandTitle" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
   </button>
 
   <div class="modal-root" id="modal-root"></div>
   <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="false"></div>
 
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
