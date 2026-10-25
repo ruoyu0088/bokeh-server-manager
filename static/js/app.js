@@ -26,6 +26,13 @@
     moon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.4A8.5 8.5 0 0 1 8.6 4 8.5 8.5 0 1 0 20 15.4Z"/></svg>',
   };
 
+  const AUTH = {
+    role: document.querySelector('meta[name="bsm-role"]')?.content || "editor",
+    csrf: document.querySelector('meta[name="bsm-csrf"]')?.content || "",
+    webMode:
+      document.querySelector('meta[name="bsm-web-mode"]')?.content === "1",
+  };
+
   const state = {
     servers: [],
     tabs: new Map(),
@@ -203,15 +210,20 @@
   }
 
   async function apiFetch(url, options = {}) {
+    const method = String(options.method || "GET").toUpperCase();
+    const headers = {
+      "X-BSM-Lang": getLanguage(),
+      ...(options.headers || {}),
+    };
+    if (AUTH.webMode && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+      headers["X-CSRF-Token"] = AUTH.csrf;
+    }
     let response;
     try {
       response = await fetch(url, {
         cache: "no-store",
         ...options,
-        headers: {
-          "X-BSM-Lang": getLanguage(),
-          ...(options.headers || {}),
-        },
+        headers,
       });
     } catch {
       setManagerStatus(false);
@@ -221,8 +233,18 @@
     const payload = contentType.includes("application/json")
       ? await response.json().catch(() => ({}))
       : {};
+    if (response.status === 401 && AUTH.webMode) {
+      window.location.assign("/login");
+      throw new Error(t("auth.required"));
+    }
     if (!response.ok) {
       setManagerStatus(true);
+      if (payload.code === "auth.readOnly") {
+        throw new Error(t("auth.readOnlyError"));
+      }
+      if (payload.code === "auth.csrf") {
+        throw new Error(t("auth.csrf"));
+      }
       throw new Error(
         payload.error || t("error.requestFailed", { status: response.status }),
       );
@@ -328,6 +350,10 @@
       const canStop = ["running", "starting", "stopping"].includes(status);
       const canReload = status !== "stopped" && status !== "stopping";
       const title = serverTitle(server);
+      const editLabel =
+        AUTH.role === "viewer"
+          ? t("server.actions.viewSource")
+          : t("server.actions.edit");
       const showDirectory = server.title && server.title !== server.name;
       const metaParts = [
         `<span>${statusLabel(status)}</span>`,
@@ -392,9 +418,9 @@
             `${t("server.actions.stop")}: ${title}`,
           )}" ${canStop && !busy ? "" : "disabled"}>${ICONS.stop}</button>
           <button class="icon-button" type="button" data-action="edit" title="${escapeHtml(
-            t("server.actions.edit"),
+            editLabel,
           )}" aria-label="${escapeHtml(
-            `${t("server.actions.edit")}: ${title}`,
+            `${editLabel}: ${title}`,
           )}" ${busy ? "disabled" : ""}>${ICONS.edit}</button>
           <button class="icon-button${server.metadata_error ? " warn" : ""}" type="button" data-action="metadata" title="${escapeHtml(
             metadataTitle,
@@ -870,6 +896,10 @@
   }
 
   function showNewServerDialog() {
+    if (AUTH.webMode && AUTH.role !== "editor") {
+      toast(t("auth.readOnlyError"), "error");
+      return;
+    }
     const body = `
       <div class="form-error" id="new-server-error"></div>
       <form id="new-server-form" autocomplete="off">
@@ -984,9 +1014,88 @@
     });
   }
 
+  function renderAuthState() {
+    document.body.dataset.role = AUTH.role;
+    const stateNode = $("#auth-state");
+    if (stateNode) {
+      stateNode.dataset.role = AUTH.role;
+      stateNode.textContent = t(
+        AUTH.role === "editor" ? "auth.editing" : "auth.readOnly",
+      );
+    }
+    const unlockButton = $("#unlock-editing");
+    if (unlockButton) unlockButton.hidden = AUTH.role === "editor";
+    elements.newServer.hidden = AUTH.role !== "editor";
+  }
+
+  function openUnlockDialog() {
+    const body = `
+      <div class="form-error" id="unlock-error"></div>
+      <form id="unlock-form" autocomplete="off">
+        <div class="form-field">
+          <label for="unlock-password">${escapeHtml(t("auth.password"))}</label>
+          <input id="unlock-password" type="password" autocomplete="current-password" required>
+          <div class="form-hint">${escapeHtml(t("auth.unlockHint"))}</div>
+        </div>
+      </form>
+    `;
+    openModal({
+      title: t("auth.unlockTitle"),
+      body,
+      narrow: true,
+      footer:
+        `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+          t("common.cancel"),
+        )}</button>` +
+        `<button class="button button-primary" id="unlock-submit" type="submit" form="unlock-form">${escapeHtml(
+          t("auth.unlock"),
+        )}</button>`,
+      onMount: () => {
+        const form = $("#unlock-form");
+        const input = $("#unlock-password");
+        const errorBox = $("#unlock-error");
+        const submit = $("#unlock-submit");
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          errorBox.classList.remove("visible");
+          submit.disabled = true;
+          try {
+            const response = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-BSM-Lang": getLanguage(),
+                "X-CSRF-Token": AUTH.csrf,
+              },
+              body: JSON.stringify({ password: input.value }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              throw new Error(t(data.code || "auth.invalid"));
+            }
+            window.location.reload();
+          } catch (error) {
+            errorBox.textContent = error.message || t("auth.invalid");
+            errorBox.classList.add("visible");
+            submit.disabled = false;
+            input.focus();
+          }
+        });
+        input.focus();
+      },
+    });
+  }
+
+  function initAuthUI() {
+    if (!AUTH.webMode) return;
+    renderAuthState();
+    $("#unlock-editing")?.addEventListener("click", openUnlockDialog);
+  }
+
   function showServerInfo(name) {
     const server = serverByName(name);
     if (!server) return;
+    const readOnly = AUTH.webMode && AUTH.role !== "editor";
     const title = serverTitle(server);
     const warning = server.metadata_error
       ? `<div class="form-notice"><strong>${escapeHtml(
@@ -1005,14 +1114,14 @@
           )}</label>
           <input id="metadata-title" maxlength="120" value="${escapeHtml(
             server.title || "",
-          )}" placeholder="${escapeHtml(name)}">
+          )}" placeholder="${escapeHtml(name)}" ${readOnly ? "readonly" : ""}>
           <div class="form-hint">${escapeHtml(t("metadata.titleHint"))}</div>
         </div>
         <div class="form-field">
           <label for="metadata-description">${escapeHtml(
             t("metadata.description"),
           )}</label>
-          <textarea id="metadata-description" rows="2" maxlength="400">${escapeHtml(
+          <textarea id="metadata-description" rows="2" maxlength="400" ${readOnly ? "readonly" : ""}>${escapeHtml(
             server.description || "",
           )}</textarea>
           <div class="form-hint">${escapeHtml(
@@ -1021,7 +1130,7 @@
         </div>
         <div class="form-field">
           <label for="metadata-usage">${escapeHtml(t("metadata.usage"))}</label>
-          <textarea id="metadata-usage" rows="7">${escapeHtml(
+          <textarea id="metadata-usage" rows="7" ${readOnly ? "readonly" : ""}>${escapeHtml(
             server.usage || "",
           )}</textarea>
           <div class="form-hint">${escapeHtml(t("metadata.usageHint"))}</div>
@@ -1038,14 +1147,18 @@
     openModal({
       title: t("metadata.title", { title }),
       body,
-      footer:
-        `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
-          t("common.cancel"),
-        )}</button>` +
-        `<button class="button button-primary" id="save-metadata" type="submit" form="metadata-form">${escapeHtml(
-          t("common.save"),
-        )}</button>`,
+      footer: readOnly
+        ? `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+            t("common.close"),
+          )}</button>`
+        : `<button class="button button-ghost" type="button" data-modal-close="true">${escapeHtml(
+            t("common.cancel"),
+          )}</button>` +
+          `<button class="button button-primary" id="save-metadata" type="submit" form="metadata-form">${escapeHtml(
+            t("common.save"),
+          )}</button>`,
       onMount: (close) => {
+        if (readOnly) return;
         const form = $("#metadata-form");
         const errorBox = $("#metadata-error");
         const saveButton = $("#save-metadata");
@@ -1147,6 +1260,7 @@
     renderSidebar();
     syncTabs();
     updateEmptyState();
+    renderAuthState();
   }
 
   function handleServerAction(name, action) {
@@ -1206,8 +1320,10 @@
   initTheme();
   initSidebar();
   initSidebarResizer();
+  initAuthUI();
   elements.languageSelect.value = getLanguage();
   applyTranslations();
+  renderAuthState();
   renderManagerStatus();
   renderSidebar();
   updateEmptyState();

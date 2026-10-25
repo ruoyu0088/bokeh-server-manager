@@ -5,6 +5,13 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const STORAGE_THEME = "bsm-theme";
   const STORAGE_LANG = "bsm-lang";
+  const AUTH = {
+    role: document.querySelector('meta[name="bsm-role"]')?.content || "editor",
+    csrf: document.querySelector('meta[name="bsm-csrf"]')?.content || "",
+    webMode:
+      document.querySelector('meta[name="bsm-web-mode"]')?.content === "1",
+  };
+  const READ_ONLY = AUTH.webMode && AUTH.role !== "editor";
   const state = {
     serverName: null,
     server: null,
@@ -26,6 +33,7 @@
     filePath: $("#file-path"),
     managedBadge: $("#managed-badge"),
     metadataBadge: $("#metadata-badge"),
+    readonlyBadge: $("#readonly-badge"),
     dirtyDot: $("#dirty-dot"),
     saveState: $("#save-state"),
     saveFile: $("#save-file"),
@@ -67,24 +75,39 @@
   }
 
   async function apiFetch(url, options = {}) {
+    const method = String(options.method || "GET").toUpperCase();
+    const headers = {
+      "X-BSM-Lang": getLanguage(),
+      ...(options.headers || {}),
+    };
+    if (AUTH.webMode && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+      headers["X-CSRF-Token"] = AUTH.csrf;
+    }
     let response;
     try {
       response = await fetch(url, {
         cache: "no-store",
         ...options,
-        headers: {
-          "X-BSM-Lang": getLanguage(),
-          ...(options.headers || {}),
-        },
+        headers,
       });
     } catch {
       throw new Error(t("error.network"));
+    }
+    if (response.status === 401 && AUTH.webMode) {
+      window.location.assign("/login");
+      throw new Error(t("auth.required"));
     }
     const contentType = response.headers.get("content-type") || "";
     const payload = contentType.includes("application/json")
       ? await response.json().catch(() => ({}))
       : {};
     if (!response.ok) {
+      if (payload.code === "auth.readOnly") {
+        throw new Error(t("auth.readOnlyError"));
+      }
+      if (payload.code === "auth.csrf") {
+        throw new Error(t("auth.csrf"));
+      }
       throw new Error(
         payload.error || t("error.requestFailed", { status: response.status }),
       );
@@ -151,6 +174,14 @@
   }
 
   function updateDirtyState() {
+    if (READ_ONLY) {
+      state.dirty = false;
+      elements.dirtyDot.hidden = true;
+      elements.saveState.textContent = t("auth.readOnly");
+      elements.saveState.className = "save-state";
+      elements.saveFile.disabled = true;
+      return;
+    }
     state.dirty = Boolean(
       state.currentPath &&
         state.editor &&
@@ -290,7 +321,7 @@
     elements.fileMode.textContent = mode.label;
     elements.editorEmpty.classList.add("hidden");
     elements.editorHost.style.visibility = "visible";
-    elements.deleteFile.disabled = false;
+    elements.deleteFile.disabled = READ_ONLY;
     clearEditorError();
   }
 
@@ -345,6 +376,7 @@
   }
 
   async function saveFile() {
+    if (READ_ONLY) return;
     if (!state.currentPath || !state.editor || state.saving) return;
     if (!state.dirty) return;
     const content = state.editor.getValue();
@@ -379,7 +411,7 @@
   }
 
   function openNewFileDialog() {
-    if (!state.serverName) return;
+    if (READ_ONLY || !state.serverName) return;
     const closeModal = () => {
       elements.modalRoot.replaceChildren();
       document.removeEventListener("keydown", onKeyDown);
@@ -475,7 +507,7 @@
   }
 
   async function deleteCurrentFile() {
-    if (!state.currentPath || state.deleting) return;
+    if (READ_ONLY || !state.currentPath || state.deleting) return;
     const pathToDelete = state.currentPath;
     let message = state.dirty
       ? t("editor.deleteConfirmDirty", { path: pathToDelete })
@@ -548,6 +580,7 @@
       value: "",
       mode: null,
       theme: state.theme === "dark" ? "material-darker" : "default",
+      readOnly: READ_ONLY,
       lineNumbers: true,
       lineWrapping: true,
       indentUnit: 4,
@@ -631,6 +664,14 @@
     initTheme();
     applyTranslations();
     createEditor();
+    document.body.dataset.role = AUTH.role;
+    elements.readonlyBadge.hidden = !READ_ONLY;
+    if (READ_ONLY) {
+      elements.newFile.disabled = true;
+      elements.deleteFile.disabled = true;
+      elements.saveFile.disabled = true;
+      elements.saveState.textContent = t("auth.readOnly");
+    }
     state.serverName = new URLSearchParams(window.location.search).get("server");
     if (!state.serverName) {
       elements.serverTitle.textContent = t("editor.noServerSelected");
@@ -641,7 +682,7 @@
       elements.deleteFile.disabled = true;
       return;
     }
-    elements.newFile.disabled = false;
+    elements.newFile.disabled = READ_ONLY;
     await loadServer();
     await refreshTree({ openMain: true });
     updateDirtyState();

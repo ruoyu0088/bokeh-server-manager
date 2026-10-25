@@ -55,6 +55,7 @@
       "server.actions.reload":
         "Reload: restart the process and apply the current theme",
       "server.actions.stop": "Stop",
+      "server.actions.viewSource": "View source",
       "server.actions.edit": "Edit source",
       "server.actions.metadata": "Server information",
       "server.actions.metadataError":
@@ -220,6 +221,35 @@
         "No server was selected. Open the server information or the Edit source button from the manager.",
       "editor.noServer": "No server",
 
+      "auth.title": "Sign in to Bokeh Server Manager",
+      "auth.subtitle":
+        "Enter the manager password to edit code and metadata. You can continue without a password in read-only mode.",
+      "auth.password": "Password",
+      "auth.signIn": "Sign in",
+      "auth.or": "or",
+      "auth.guest": "Continue without password",
+      "auth.guestHint":
+        "Read-only mode: view source, logs, and running apps; start, stop, and reload servers. Editing files and metadata requires the password.",
+      "auth.invalid": "Incorrect password.",
+      "auth.tooMany": "Too many failed attempts. Try again later.",
+      "auth.notConfigured":
+        "Web password is not configured. Run start.bat --web --set-password.",
+      "auth.csrf":
+        "The request could not be verified. Reload the page and try again.",
+      "auth.httpShort": "HTTP only: LAN traffic is not encrypted.",
+      "auth.httpWarning":
+        "HTTP only: LAN traffic is not encrypted. Use only a trusted network.",
+      "auth.readOnly": "Read-only",
+      "auth.editing": "Editing enabled",
+      "auth.unlock": "Enter password",
+      "auth.unlockTitle": "Enable editing",
+      "auth.unlockHint":
+        "Enter the manager password to edit code and metadata.",
+      "auth.logout": "Sign out",
+      "auth.required": "Authentication required.",
+      "auth.readOnlyError":
+        "Read-only mode: this change requires the web password.",
+      "auth.loginTitle": "Sign in",
       "common.cancel": "Cancel",
       "common.close": "Close",
       "common.save": "Save",
@@ -279,6 +309,7 @@
       "server.actions.start": "启动",
       "server.actions.reload": "重新载入：重启进程并应用当前主题",
       "server.actions.stop": "停止",
+      "server.actions.viewSource": "查看源码",
       "server.actions.edit": "编辑源程序",
       "server.actions.metadata": "服务器信息",
       "server.actions.metadataError": "服务器信息（server.json 有错误）",
@@ -431,6 +462,32 @@
         "未选择服务器。请从管理器中的“服务器信息”或“编辑源程序”按钮打开。",
       "editor.noServer": "无服务器",
 
+      "auth.title": "登录 Bokeh Server Manager",
+      "auth.subtitle":
+        "输入管理器密码后可编辑代码和元信息；也可以不输入密码，以只读模式进入。",
+      "auth.password": "密码",
+      "auth.signIn": "登录",
+      "auth.or": "或",
+      "auth.guest": "不输入密码，直接进入",
+      "auth.guestHint":
+        "只读模式：可查看源码、日志和运行中的应用，可启动、停止和重新载入服务器；编辑文件和元信息需要密码。",
+      "auth.invalid": "密码错误。",
+      "auth.tooMany": "失败次数过多，请稍后再试。",
+      "auth.notConfigured":
+        "尚未配置 Web 密码。请运行 start.bat --web --set-password。",
+      "auth.csrf": "请求校验失败，请刷新页面后重试。",
+      "auth.httpShort": "仅 HTTP：局域网流量未加密。",
+      "auth.httpWarning":
+        "当前使用 HTTP，局域网流量未加密，请只在可信网络中使用。",
+      "auth.readOnly": "只读",
+      "auth.editing": "可编辑",
+      "auth.unlock": "输入密码",
+      "auth.unlockTitle": "启用编辑",
+      "auth.unlockHint": "输入管理器密码以编辑代码和元信息。",
+      "auth.logout": "退出登录",
+      "auth.required": "需要登录。",
+      "auth.readOnlyError": "只读模式：此修改需要 Web 密码。",
+      "auth.loginTitle": "登录",
       "common.cancel": "取消",
       "common.close": "关闭",
       "common.save": "保存",
@@ -490,6 +547,7 @@
       "server.actions.start": "起動",
       "server.actions.reload": "再読み込み：プロセスを再起動し、現在のテーマを適用",
       "server.actions.stop": "停止",
+      "server.actions.viewSource": "ソースを表示",
       "server.actions.edit": "ソースを編集",
       "server.actions.metadata": "サーバー情報",
       "server.actions.metadataError": "サーバー情報（server.json にエラーがあります）",
@@ -655,6 +713,34 @@
         "サーバーが選択されていません。マネージャーの「サーバー情報」または「ソースを編集」から開いてください。",
       "editor.noServer": "サーバーなし",
 
+      "auth.title": "Bokeh Server Manager にサインイン",
+      "auth.subtitle":
+        "マネージャーのパスワードを入力するとコードとメタデータを編集できます。パスワードなしで読み取り専用モードに入ることもできます。",
+      "auth.password": "パスワード",
+      "auth.signIn": "サインイン",
+      "auth.or": "または",
+      "auth.guest": "パスワードなしで続行",
+      "auth.guestHint":
+        "読み取り専用モード：ソース、ログ、実行中のアプリを表示し、サーバーの起動・停止・再読み込みができます。ファイルとメタデータの編集にはパスワードが必要です。",
+      "auth.invalid": "パスワードが違います。",
+      "auth.tooMany": "失敗回数が多すぎます。しばらく待ってから再試行してください。",
+      "auth.notConfigured":
+        "Web パスワードが設定されていません。start.bat --web --set-password を実行してください。",
+      "auth.csrf": "リクエストを検証できませんでした。ページを再読み込みしてください。",
+      "auth.httpShort": "HTTP のみ：LAN 通信は暗号化されません。",
+      "auth.httpWarning":
+        "HTTP のみです。LAN の通信は暗号化されません。信頼できるネットワークでのみ使用してください。",
+      "auth.readOnly": "読み取り専用",
+      "auth.editing": "編集可能",
+      "auth.unlock": "パスワードを入力",
+      "auth.unlockTitle": "編集を有効化",
+      "auth.unlockHint":
+        "コードとメタデータを編集するにはマネージャーのパスワードを入力してください。",
+      "auth.logout": "サインアウト",
+      "auth.required": "認証が必要です。",
+      "auth.readOnlyError":
+        "読み取り専用モードです。この変更には Web パスワードが必要です。",
+      "auth.loginTitle": "サインイン",
       "common.cancel": "キャンセル",
       "common.close": "閉じる",
       "common.save": "保存",

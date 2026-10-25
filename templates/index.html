@@ -4,10 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="bsm-csrf" content="{{ csrf }}">
+  <meta name="bsm-role" content="{{ role }}">
+  <meta name="bsm-web-mode" content="{{ '1' if web_mode else '0' }}">
+  <meta name="bsm-lan-warning" content="{{ '1' if lan_warning else '0' }}">
   <title>{{ app_title }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
-<body>
+<body data-role="{{ role }}">
   <div class="app-shell" id="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="Server management sidebar" data-i18n-aria-label="sidebar.aria">
       <div class="sidebar-header">
@@ -55,6 +59,19 @@
             </select>
           </label>
         </div>
+        {% if web_mode %}
+        <div class="footer-row auth-row" id="auth-controls">
+          <span class="auth-state" id="auth-state" data-role="{{ role }}"></span>
+          <button class="auth-link" id="unlock-editing" type="button" data-i18n="auth.unlock" {% if role == "editor" %}hidden{% endif %}>Enter password</button>
+          <form method="post" action="{{ url_for('logout') }}" id="logout-form">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="auth-link" type="submit" data-i18n="auth.logout">Sign out</button>
+          </form>
+        </div>
+        {% if lan_warning %}
+        <div class="auth-http-warning" data-i18n="auth.httpShort">HTTP only: LAN traffic is not encrypted.</div>
+        {% endif %}
+        {% endif %}
         <div class="footer-row">
           <div class="connection-status" id="manager-status" title="Manager connection status" data-i18n-title="sidebar.connectionTitle">
             <span class="status-dot status-running"></span>

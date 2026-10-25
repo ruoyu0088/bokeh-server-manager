@@ -95,6 +95,18 @@
   color: var(--accent-text);
 }
 
+.badge-readonly {
+  border-color: color-mix(in srgb, var(--warning) 28%, var(--border));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+body[data-role="viewer"] #save-file,
+body[data-role="viewer"] #new-file,
+body[data-role="viewer"] #delete-file {
+  display: none;
+}
+
 .dirty-dot {
   flex: 0 0 auto;
   width: 7px;
