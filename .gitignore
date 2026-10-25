@@ -1,0 +1,18 @@
+# Runtime state, logs, and generated process data
+.runtime/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Web tooling
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
