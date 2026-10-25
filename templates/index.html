@@ -1,17 +1,90 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>{{ app_title }}</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 60px auto; padding: 0 20px; }
-    code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
-  <h1>{{ app_title }}</h1>
-  <p>后端已启动。管理界面正在搭建中。</p>
-  <p>API: <code>/api/servers</code></p>
+  <div class="app-shell" id="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Server management sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="brand-title">Bokeh Server Manager</span>
+        </div>
+        <button class="icon-button icon-button-small" id="sidebar-collapse" type="button" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="sidebar-toolbar">
+        <div class="sidebar-heading">
+          <h2>Bokeh Servers</h2>
+          <span class="server-count" id="server-count">0</span>
+        </div>
+        <div class="sidebar-tools">
+          <button class="button button-primary button-compact" id="new-server-btn" type="button" title="Create a new Bokeh server" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            New
+          </button>
+          <button class="icon-button icon-button-small" id="refresh-servers" type="button" title="Refresh server list" aria-label="Refresh server list">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="server-list" id="server-list" aria-live="polite"></div>
+
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle light / dark theme">
+          <span id="theme-icon" aria-hidden="true"></span>
+          <span id="theme-label">Light theme</span>
+        </button>
+        <div class="connection-status" id="manager-status" title="Manager connection status">
+          <span class="status-dot status-running"></span>
+          <span>Connected</span>
+        </div>
+        <span class="shortcut-hint" title="Show / hide sidebar">Ctrl+B</span>
+      </div>
+
+      <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to resize sidebar; double-click to reset" role="separator" aria-orientation="vertical"></div>
+    </aside>
+
+    <main class="main">
+      <div class="tabbar" id="tabbar">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Open Bokeh servers"></div>
+        <div class="tabbar-spacer" aria-hidden="true"></div>
+      </div>
+      <div class="workspace" id="workspace">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-state-card">
+            <div class="empty-illustration" aria-hidden="true">
+              <span class="bubble bubble-a"></span>
+              <span class="bubble bubble-b"></span>
+              <span class="bubble bubble-c"></span>
+            </div>
+            <h1>Open a Bokeh server</h1>
+            <p>Start a server from the sidebar and its UI will open here in a tab. You can keep several servers open at once.</p>
+            <p class="empty-shortcut">Press <kbd>Ctrl</kbd> + <kbd>B</kbd> to show or hide the sidebar.</p>
+          </div>
+        </div>
+        <div class="panes" id="panes"></div>
+      </div>
+    </main>
+  </div>
+
+  <button class="sidebar-handle" id="sidebar-handle" type="button" title="Show sidebar (Ctrl+B)" aria-label="Show sidebar" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+  </button>
+
+  <div class="modal-root" id="modal-root"></div>
+  <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
