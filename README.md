@@ -11,6 +11,7 @@ Each application runs in its own Bokeh process. The manager assigns a free port 
 ## Features
 
 - Multilingual interface: English, Simplified Chinese, and Japanese.
+- Configurable manager port and bind address, with opt-in LAN access.
 - Collapsible, resizable sidebar. Toggle it with `Ctrl+B` (or `Cmd+B`).
 - One process per Bokeh server, with an automatically assigned port.
 - Multiple running servers displayed as tabs; each tab is an iframe.
@@ -46,18 +47,35 @@ The Bokeh process needs `MKL_THREADING_LAYER=TBB` with this environment. `start.
 
 ## Quick start
 
-Double-click `start.bat`.
+Double-click `start.bat` for the defaults: `127.0.0.1:8010`.
 
-The manager starts at <http://127.0.0.1:8010> and opens the browser automatically.
+The manager opens the browser automatically.
+
+To change the port or bind address:
+
+```bat
+start.bat --port 8080
+start.bat --port 8010 --host 127.0.0.1
+start.bat --port 8010 --host 0.0.0.0
+```
+
+- `--port` defaults to `8010`.
+- `--host` defaults to `127.0.0.1`.
+- Use `--host 0.0.0.0` to allow access from other computers on the LAN.
+- `start.bat --help` shows the available options.
 
 To run it manually:
 
 ```bat
 set MKL_THREADING_LAYER=TBB
+set BSM_HOST=127.0.0.1
+set BSM_PORT=8010
 C:\pixi_env\.pixi\envs\default\python.exe -u app.py
 ```
 
-Set `BSM_PORT` to use a different manager port.
+When binding to `0.0.0.0`, open `http://<this-computer-ip>:8010` from another computer. The manager automatically uses the hostname or IP used by the browser for the Bokeh iframe URLs, and the child Bokeh servers bind to all interfaces as well.
+
+Windows Firewall may need to allow Python for both the manager port and the automatically assigned Bokeh ports on private networks.
 
 ## Server directory convention
 
@@ -175,7 +193,9 @@ Start, stop, reload, and metadata requests take JSON bodies. File paths are rest
 
 ## Notes
 
-- The manager binds only to `127.0.0.1`. It has no authentication; do not expose it to an untrusted network.
+- The default bind address is `127.0.0.1`. `--host 0.0.0.0` exposes the manager to the LAN.
+- The manager has no authentication and can edit local files and run code. Only expose it on a trusted network.
 - The manager is a local development tool, not a production deployment server.
+- LAN access also requires the automatically assigned Bokeh ports to be reachable.
 - `start.bat` hard-codes the Python path `C:\pixi_env\.pixi\envs\default\python.exe`. Change `PYTHON` in the file if your environment is elsewhere.
 - Generated per-server theme files are ignored by Git. They are recreated on demand.

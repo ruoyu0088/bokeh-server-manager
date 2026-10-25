@@ -61,7 +61,7 @@ PAGE_TEMPLATE = """{% extends base %}
 </style>
 {% endblock %}
 """
-HOST = "127.0.0.1"
+BOKEH_HOST = "127.0.0.1"
 START_TIMEOUT = 20.0
 STOP_TIMEOUT = 5.0
 HEALTH_GRACE = 8.0
@@ -79,6 +79,22 @@ SKIP_SUFFIXES = {".pyc", ".pyo"}
 
 SERVER_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 RESERVED_NAMES = {"servers", "static", "templates", "themes", "api", "editor"}
+
+
+def set_bind_host(host: str) -> None:
+    """Choose whether child Bokeh servers bind to loopback or all interfaces.
+
+    The manager can be exposed on a LAN address or ``0.0.0.0``.  Bokeh child
+    servers must then bind all interfaces as well so iframes loaded by other
+    computers can reach their ports.
+    """
+    global BOKEH_HOST
+    normalized = str(host or "").strip().lower()
+    BOKEH_HOST = (
+        "127.0.0.1"
+        if normalized in {"127.0.0.1", "localhost", "::1"}
+        else "0.0.0.0"
+    )
 
 
 class ManagerError(Exception):
@@ -134,7 +150,8 @@ class Runtime:
 
     @property
     def url(self) -> str:
-        return f"http://{HOST}:{self.port}/{urllib.parse.quote(self.name)}"
+        # The API layer rewrites this with the host used to reach the manager.
+        return f"http://127.0.0.1:{self.port}/{urllib.parse.quote(self.name)}"
 
     def to_dict(self) -> dict[str, Any]:
         uptime = None
@@ -572,7 +589,7 @@ def _listener_pid(port: int) -> int | None:
 
 
 def _http_ready(port: int, name: str) -> bool:
-    url = f"http://{HOST}:{port}/{urllib.parse.quote(name)}"
+    url = f"http://127.0.0.1:{port}/{urllib.parse.quote(name)}"
     try:
         with urllib.request.urlopen(url, timeout=1.0) as response:
             return 200 <= response.status < 400
@@ -582,7 +599,7 @@ def _http_ready(port: int, name: str) -> bool:
 
 def _allocate_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind((HOST, 0))
+        sock.bind((BOKEH_HOST, 0))
         return int(sock.getsockname()[1])
 
 
@@ -703,7 +720,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         log_handle = log_path.open("a", encoding="utf-8", buffering=1)
         log_handle.write(
             f"\n===== manager start {time.strftime('%Y-%m-%d %H:%M:%S')} "
-            f"({HOST}:{port}, theme={theme}) =====\n"
+            f"({BOKEH_HOST}:{port}, theme={theme}) =====\n"
         )
         log_handle.flush()
 
@@ -727,14 +744,23 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             "--port",
             str(port),
             "--address",
-            HOST,
+            BOKEH_HOST,
             "--log-level",
             "info",
             "--dev",
-            "--allow-websocket-origin",
-            f"{HOST}:{port}",
-            str(server.path),
         ]
+        if BOKEH_HOST == "0.0.0.0":
+            command.extend(["--allow-websocket-origin", "*"])
+        else:
+            command.extend(
+                [
+                    "--allow-websocket-origin",
+                    f"127.0.0.1:{port}",
+                    "--allow-websocket-origin",
+                    f"localhost:{port}",
+                ]
+            )
+        command.append(str(server.path))
         creationflags = 0
         if os.name == "nt":
             creationflags = (

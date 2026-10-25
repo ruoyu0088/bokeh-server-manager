@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import threading
 import webbrowser
+from urllib.parse import quote
 
 from flask import Flask, Response, jsonify, render_template, request
 
@@ -29,6 +30,34 @@ def localize_state(state: dict, language: str) -> dict:
         if value:
             localized[key] = translate_error(str(value), language)
     return localized
+
+
+def request_hostname() -> str:
+    host = request.host or "127.0.0.1"
+    if host.startswith("["):
+        hostname = host.split("]")[0] + "]"
+    else:
+        hostname = host.split(":", 1)[0]
+    if hostname in {"0.0.0.0", "::"}:
+        hostname = "127.0.0.1"
+    return hostname
+
+
+def rewrite_state_url(state: dict, hostname: str) -> dict:
+    rewritten = dict(state)
+    port = rewritten.get("port")
+    if port:
+        rewritten["url"] = (
+            f"http://{hostname}:{port}/{quote(str(rewritten['name']), safe='')}"
+        )
+    return rewritten
+
+
+def prepare_state(state: dict, language: str) -> dict:
+    return rewrite_state_url(
+        localize_state(state, language),
+        request_hostname(),
+    )
 
 
 @app.errorhandler(manager.ManagerError)
@@ -58,7 +87,7 @@ def api_servers() -> Response:
     return jsonify(
         {
             "servers": [
-                localize_state(state, language)
+                prepare_state(state, language)
                 for state in manager.list_server_states()
             ],
             "themes": ["light", "dark"],
@@ -76,12 +105,12 @@ def api_create_server() -> Response:
         usage=payload.get("usage", ""),
         template=payload.get("template", "blank"),
     )
-    return jsonify(localize_state(state, request_language())), 201
+    return jsonify(prepare_state(state, request_language())), 201
 
 
 @app.get("/api/servers/<name>")
 def api_server(name: str) -> Response:
-    return jsonify(localize_state(manager.server_state(name), request_language()))
+    return jsonify(prepare_state(manager.server_state(name), request_language()))
 
 
 @app.post("/api/servers/<name>/start")
@@ -89,13 +118,13 @@ def api_start_server(name: str) -> Response:
     payload = request.get_json(silent=True) or {}
     theme = str(payload.get("theme", "light"))
     state = manager.start_server(name, theme)
-    return jsonify(localize_state(state, request_language()))
+    return jsonify(prepare_state(state, request_language()))
 
 
 @app.post("/api/servers/<name>/stop")
 def api_stop_server(name: str) -> Response:
     state = manager.stop_server(name)
-    return jsonify(localize_state(state, request_language()))
+    return jsonify(prepare_state(state, request_language()))
 
 
 @app.post("/api/servers/<name>/reload")
@@ -103,7 +132,7 @@ def api_reload_server(name: str) -> Response:
     payload = request.get_json(silent=True) or {}
     theme = str(payload.get("theme", "light"))
     state = manager.reload_server(name, theme)
-    return jsonify(localize_state(state, request_language()))
+    return jsonify(prepare_state(state, request_language()))
 
 
 @app.get("/api/servers/<name>/logs")
@@ -118,7 +147,7 @@ def api_update_metadata(name: str) -> Response:
     if payload is None:
         payload = {}
     state = manager.update_metadata(name, payload)
-    return jsonify(localize_state(state, request_language()))
+    return jsonify(prepare_state(state, request_language()))
 
 
 @app.get("/api/servers/<name>/tree")
@@ -156,10 +185,21 @@ def favicon() -> Response:
 
 def main() -> None:
     manager.ensure_directories()
-    port = int(os.environ.get("BSM_PORT", str(DEFAULT_PORT)))
-    host = "127.0.0.1"
-    url = f"http://{host}:{port}"
+    try:
+        port = int(os.environ.get("BSM_PORT", str(DEFAULT_PORT)))
+    except ValueError:
+        print(f"Invalid BSM_PORT: {os.environ.get('BSM_PORT')!r}")
+        raise SystemExit(1)
+    host = os.environ.get("BSM_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    manager.set_bind_host(host)
+
+    browser_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+    url = f"http://{browser_host}:{port}"
     print(f"{APP_TITLE} running at {url}")
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        print("WARNING: the manager is exposed beyond localhost.")
+        print("         It has no authentication and can edit local files.")
+        print(f"         LAN clients can use http://<this-computer-ip>:{port}")
     if os.environ.get("BSM_OPEN_BROWSER") == "1":
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
     app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
