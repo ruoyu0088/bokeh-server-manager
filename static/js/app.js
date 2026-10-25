@@ -455,6 +455,8 @@
     const pane = document.createElement("div");
     pane.className = "tab-pane";
     pane.dataset.name = name;
+    pane.dataset.lastStatus = server.status;
+    pane.dataset.lastPid = server.pid ? String(server.pid) : "";
     const iframe = document.createElement("iframe");
     iframe.title = `${title} Bokeh application`;
     iframe.src = server.url;
@@ -535,7 +537,11 @@
     entry.tab.title = `${title} · ${server.name}`;
     entry.iframe.title = `${title} Bokeh application`;
 
+    const lastPid = entry.pane.dataset.lastPid || "";
+    const currentPid = server.pid ? String(server.pid) : "";
+    const pidChanged = Boolean(lastPid && currentPid && lastPid !== currentPid);
     const staleUrl = entry.iframe.dataset.serverUrl !== server.url;
+    let reloadedForPid = false;
     if (staleUrl) {
       entry.iframe.dataset.serverUrl = server.url;
       entry.iframe.src = withCacheBust(server.url);
@@ -545,7 +551,17 @@
         `Connecting to ${title}`,
         "The server process changed. Reloading the Bokeh UI.",
       );
+    } else if (pidChanged && server.status === "running") {
+      reloadedForPid = true;
+      entry.iframe.src = withCacheBust(server.url);
+      setOverlay(
+        entry.pane,
+        "loading",
+        `${title} is reloading`,
+        "Source changes were picked up by Bokeh --dev. Refreshing the UI.",
+      );
     }
+    if (currentPid) entry.pane.dataset.lastPid = currentPid;
     if (server.status === "error") {
       setOverlay(
         entry.pane,
@@ -561,7 +577,7 @@
         "The Bokeh process is preparing. The UI will appear automatically.",
       );
     } else if (server.status === "running") {
-      if (!staleUrl && previousStatus === "error") {
+      if (!staleUrl && !reloadedForPid && previousStatus === "error") {
         entry.iframe.src = withCacheBust(server.url);
         setOverlay(
           entry.pane,
@@ -714,6 +730,7 @@
       );
       if (entry && data.url) {
         entry.iframe.dataset.serverUrl = data.url;
+        entry.pane.dataset.lastPid = data.pid ? String(data.pid) : "";
         entry.iframe.src = withCacheBust(data.url);
         setOverlay(
           entry.pane,

@@ -44,6 +44,23 @@ MAX_EDIT_BYTES = 2 * 1024 * 1024
 MAX_METADATA_BYTES = 64 * 1024
 METADATA_FIELDS = ("title", "description", "usage")
 SERVER_TEMPLATES = {"blank", "interactive"}
+PAGE_THEME_COLORS = {
+    "light": {"background": "#f8fafc", "text": "#172033"},
+    "dark": {"background": "#0b1120", "text": "#d8e0ed"},
+}
+PAGE_TEMPLATE = """{% extends base %}
+{% block postamble %}
+<style>
+  html, body {
+    background: __BACKGROUND__;
+    color: __TEXT__;
+  }
+  .bk-root {
+    background: transparent;
+  }
+</style>
+{% endblock %}
+"""
 HOST = "127.0.0.1"
 START_TIMEOUT = 20.0
 STOP_TIMEOUT = 5.0
@@ -293,6 +310,10 @@ def _safe_relative_path(server: ServerInfo, relative: str) -> Path:
     return target
 
 
+def _is_managed_file(relative: str) -> bool:
+    return relative in {THEME_FILE, "templates/index.html"}
+
+
 def build_file_tree(name: str) -> dict[str, Any]:
     """Return a sorted nested tree of the files in one server directory."""
     server = get_server(name)
@@ -336,7 +357,7 @@ def build_file_tree(name: str) -> dict[str, Any]:
                         "path": child_relative.as_posix(),
                         "size": stat.st_size,
                         "mtime": stat.st_mtime,
-                        "managed": child.name == THEME_FILE,
+                        "managed": _is_managed_file(child_relative.as_posix()),
                         "metadata": child.name == METADATA_FILE,
                     }
                 )
@@ -366,12 +387,13 @@ def read_text_file(name: str, relative: str) -> dict[str, Any]:
         content = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
         content = raw.decode("utf-8", errors="replace")
+    relative_path = path.relative_to(server.path).as_posix()
     return {
-        "path": path.relative_to(server.path).as_posix(),
+        "path": relative_path,
         "content": content,
         "size": stat.st_size,
         "mtime": stat.st_mtime,
-        "managed": path.name == THEME_FILE,
+        "managed": _is_managed_file(relative_path),
         "metadata": path.name == METADATA_FILE,
     }
 
@@ -673,8 +695,9 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         ensure_directories()
         try:
             copy_theme(theme, server.path / THEME_FILE)
+            write_page_theme(theme, server.path)
         except OSError as exc:
-            raise ManagerError(f"Could not write theme.yaml: {exc}", 500) from exc
+            raise ManagerError(f"Could not write theme files: {exc}", 500) from exc
         port = _allocate_port()
         log_path = LOGS_DIR / _log_filename(name)
         log_handle = log_path.open("a", encoding="utf-8", buffering=1)
@@ -880,4 +903,17 @@ def copy_theme(theme: str, destination: Path) -> None:
     if not source.is_file():
         raise ManagerError(f"Missing theme file: {source.name}", 500)
     shutil.copyfile(source, destination)
+
+
+def write_page_theme(theme: str, server_dir: Path) -> None:
+    """Write a Bokeh page template that gives the app page a matching backdrop."""
+    if theme not in PAGE_THEME_COLORS:
+        raise ManagerError("Unknown theme.", 400)
+    colors = PAGE_THEME_COLORS[theme]
+    page = PAGE_TEMPLATE
+    page = page.replace("__BACKGROUND__", colors["background"])
+    page = page.replace("__TEXT__", colors["text"])
+    templates = server_dir / "templates"
+    templates.mkdir(exist_ok=True)
+    (templates / "index.html").write_text(page, encoding="utf-8", newline="\n")
 
