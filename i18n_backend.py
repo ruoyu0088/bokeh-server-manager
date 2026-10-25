@@ -91,9 +91,21 @@ EXACT = {
         "Bokeh 进程已退出，请查看日志。",
         "Bokeh プロセスが終了しました。ログを確認してください。",
     ),
+    "Server startup timed out.": (
+        "服务器启动超时。",
+        "サーバーの起動がタイムアウトしました。",
+    ),
+    "The server process exited. Check the logs.": (
+        "服务器进程已退出，请查看日志。",
+        "サーバープロセスが終了しました。ログを確認してください。",
+    ),
     "Missing main.py, the entry point for a Bokeh directory application.": (
         "缺少 Bokeh 目录应用入口 main.py。",
         "Bokeh ディレクトリアプリのエントリーポイント main.py がありません。",
+    ),
+    "Missing main.py, the application entry point.": (
+        "缺少应用入口 main.py。",
+        "アプリケーションのエントリーポイント main.py がありません。",
     ),
     "This directory is not a valid Bokeh directory application.": (
         "这个目录不是有效的 Bokeh 目录应用。",
@@ -176,9 +188,29 @@ PATTERNS = (
         "Bokeh プロセスを起動できません：{0}",
     ),
     (
+        re.compile(r"^Could not start the server process: (.+)$"),
+        "无法启动服务器进程：{0}",
+        "サーバープロセスを起動できません：{0}",
+    ),
+    (
         re.compile(r"^Bokeh process failed to start \(exit code (\d+)\)\.$"),
         "Bokeh 进程启动失败（退出码 {0}）。",
         "Bokeh プロセスの起動に失敗しました（終了コード {0}）。",
+    ),
+    (
+        re.compile(r"^Server process failed to start \(exit code (\d+)\)\.$"),
+        "服务器进程启动失败（退出码 {0}）。",
+        "サーバープロセスの起動に失敗しました（終了コード {0}）。",
+    ),
+    (
+        re.compile(r'^Unsupported framework: "(.+)"\. Use "bokeh" or "panel"\.$'),
+        "不支持的框架：“{0}”。请使用 bokeh 或 panel。",
+        "サポートされていないフレームワークです：「{0}」。bokeh または panel を使用してください。",
+    ),
+    (
+        re.compile(r'^Unsupported framework in server\.json: "(.+)"\. Use "bokeh" or "panel"\.$'),
+        "server.json 中的框架不受支持：“{0}”。请使用 bokeh 或 panel。",
+        "server.json のフレームワークがサポートされていません：「{0}」。bokeh または panel を使用してください。",
     ),
     (
         re.compile(r"^Missing theme file: (.+)$"),

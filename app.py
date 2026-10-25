@@ -47,9 +47,20 @@ def rewrite_state_url(state: dict, hostname: str) -> dict:
     rewritten = dict(state)
     port = rewritten.get("port")
     if port:
-        rewritten["url"] = (
-            f"http://{hostname}:{port}/{quote(str(rewritten['name']), safe='')}"
+        route = str(
+            rewritten.get("route")
+            or f"/{quote(str(rewritten['name']), safe='')}"
         )
+        if not route.startswith("/"):
+            route = "/" + route
+        url = f"http://{hostname}:{port}{route}"
+        if rewritten.get("framework") == "panel":
+            theme = rewritten.get("theme")
+            if theme:
+                # Panel's light theme is named "default"; "light" raises KeyError.
+                panel_theme = "default" if theme == "light" else "dark"
+                url += f"?theme={panel_theme}"
+        rewritten["url"] = url
     return rewritten
 
 
@@ -104,6 +115,7 @@ def api_create_server() -> Response:
         description=payload.get("description", ""),
         usage=payload.get("usage", ""),
         template=payload.get("template", "blank"),
+        framework=payload.get("framework", "bokeh"),
     )
     return jsonify(prepare_state(state, request_language())), 201
 

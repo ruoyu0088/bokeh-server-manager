@@ -1,11 +1,13 @@
-"""Server discovery and file-system helpers for the Bokeh server manager.
+"""Server discovery and file-system helpers for the Bokeh/Panel manager.
 
 The Flask layer in :mod:`app` is intentionally thin.  This module owns the
 on-disk conventions:
 
 * every application lives in ``servers/<name>/``;
-* an application is a Bokeh *directory application* with a ``main.py`` entry;
-* generated files (``theme.yaml``) live next to the application code.
+* an application is a Bokeh directory app or a single-file Panel script with a
+  ``main.py`` entry;
+* ``server.json`` selects the framework (default ``bokeh``);
+* generated Bokeh files (``theme.yaml``) live next to the application code.
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ MAX_EDIT_BYTES = 2 * 1024 * 1024
 MAX_METADATA_BYTES = 64 * 1024
 METADATA_FIELDS = ("title", "description", "usage")
 SERVER_TEMPLATES = {"blank", "interactive"}
+FRAMEWORKS = {"bokeh", "panel"}
 PAGE_THEME_COLORS = {
     "light": {"background": "#f8fafc", "text": "#172033"},
     "dark": {"background": "#0b1120", "text": "#d8e0ed"},
@@ -82,11 +85,11 @@ RESERVED_NAMES = {"servers", "static", "templates", "themes", "api", "editor"}
 
 
 def set_bind_host(host: str) -> None:
-    """Choose whether child Bokeh servers bind to loopback or all interfaces.
+    """Choose whether child Bokeh/Panel servers bind to loopback or all interfaces.
 
-    The manager can be exposed on a LAN address or ``0.0.0.0``.  Bokeh child
-    servers must then bind all interfaces as well so iframes loaded by other
-    computers can reach their ports.
+    The manager can be exposed on a LAN address or ``0.0.0.0``.  Child servers
+    must then bind all interfaces as well so iframes loaded by other computers
+    can reach their ports.
     """
     global BOKEH_HOST
     normalized = str(host or "").strip().lower()
@@ -118,6 +121,7 @@ class ServerInfo:
     description: str = ""
     usage: str = ""
     metadata_error: str | None = None
+    framework: str = "bokeh"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -130,6 +134,7 @@ class ServerInfo:
             "description": self.description,
             "usage": self.usage,
             "metadata_error": self.metadata_error,
+            "framework": self.framework,
         }
 
 
@@ -139,6 +144,8 @@ class Runtime:
     path: Path
     port: int
     theme: str
+    framework: str
+    route: str
     log_path: Path
     process: subprocess.Popen[Any] | None = None
     log_handle: TextIO | None = None
@@ -151,7 +158,7 @@ class Runtime:
     @property
     def url(self) -> str:
         # The API layer rewrites this with the host used to reach the manager.
-        return f"http://127.0.0.1:{self.port}/{urllib.parse.quote(self.name)}"
+        return f"http://127.0.0.1:{self.port}{self.route}"
 
     def to_dict(self) -> dict[str, Any]:
         uptime = None
@@ -163,6 +170,8 @@ class Runtime:
             "port": self.port,
             "url": self.url,
             "theme": self.theme,
+            "framework": self.framework,
+            "route": self.route,
             "pid": self.last_pid,
             "started_at": self.started_at,
             "uptime": uptime,
@@ -266,15 +275,38 @@ def _metadata_values(metadata: dict[str, Any]) -> dict[str, str]:
     return values
 
 
+def _framework_value(
+    metadata: dict[str, Any],
+    metadata_error: str | None,
+) -> tuple[str, str | None]:
+    if metadata_error:
+        return "bokeh", metadata_error
+    value = metadata.get("framework", "bokeh")
+    if value is None or value == "":
+        return "bokeh", None
+    if not isinstance(value, str):
+        return "bokeh", 'server.json field "framework" must be a string.'
+    framework = value.strip().lower()
+    if not framework:
+        return "bokeh", None
+    if framework not in FRAMEWORKS:
+        return (
+            "bokeh",
+            f'Unsupported framework in server.json: "{value}". Use "bokeh" or "panel".',
+        )
+    return framework, None
+
+
 def get_server(name: str) -> ServerInfo:
     path = server_path(name)
     if not path.is_dir():
         raise ManagerError(f'Server "{name}" does not exist.', 404)
     entry = path / SERVER_FILE
     valid = entry.is_file()
-    error = None if valid else "Missing main.py, the entry point for a Bokeh directory application."
+    error = None if valid else "Missing main.py, the application entry point."
     metadata, metadata_error = _load_metadata(path)
     values = _metadata_values(metadata)
+    framework, metadata_error = _framework_value(metadata, metadata_error)
     return ServerInfo(
         name=name,
         path=path,
@@ -286,6 +318,7 @@ def get_server(name: str) -> ServerInfo:
         description=values["description"],
         usage=values["usage"],
         metadata_error=metadata_error,
+        framework=framework,
     )
 
 
@@ -296,18 +329,20 @@ def list_servers() -> list[ServerInfo]:
         valid = entry.is_file()
         metadata, metadata_error = _load_metadata(path)
         values = _metadata_values(metadata)
+        framework, metadata_error = _framework_value(metadata, metadata_error)
         servers.append(
             ServerInfo(
                 name=path.name,
                 path=path,
                 entry=entry if valid else None,
                 valid=valid,
-                error=None if valid else "Missing main.py, the entry point for a Bokeh directory application.",
+                error=None if valid else "Missing main.py, the application entry point.",
                 file_count=_count_files(path),
                 title=values["title"],
                 description=values["description"],
                 usage=values["usage"],
                 metadata_error=metadata_error,
+                framework=framework,
             )
         )
     return servers
@@ -535,9 +570,61 @@ def update_metadata(name: str, payload: dict[str, Any]) -> dict[str, Any]:
     return server_state(name)
 
 
-def _template_code(template: str, title: str) -> str:
-    safe_title = html.escape(title)
+def _template_code(template: str, title: str, framework: str = "bokeh") -> str:
     title_json = json.dumps(title, ensure_ascii=False)
+    if framework == "panel":
+        markdown_json = json.dumps(
+            f"## {title}\n\nEdit `main.py` to build your Panel application.",
+            ensure_ascii=False,
+        )
+        if template == "blank":
+            return f'''"""A minimal Panel application."""
+
+import panel as pn
+
+pn.extension()
+
+template = pn.template.FastListTemplate(
+    title={title_json},
+    main=[pn.pane.Markdown({markdown_json})],
+)
+template.servable()
+'''
+        return f'''"""An interactive Panel application."""
+
+import numpy as np
+import panel as pn
+from bokeh.plotting import figure
+
+pn.extension()
+
+frequency = pn.widgets.FloatSlider(
+    name="Frequency",
+    start=0.5,
+    end=4.0,
+    value=1.0,
+    step=0.1,
+)
+
+
+@pn.depends(frequency.param.value)
+def wave_plot(freq):
+    x = np.linspace(0, 4 * np.pi, 400)
+    plot = figure(height=380, sizing_mode="stretch_width", title="Sine wave")
+    plot.line(x, np.sin(freq * x), line_width=3, color="#3b82f6")
+    plot.toolbar.logo = None
+    return plot
+
+
+template = pn.template.FastListTemplate(
+    title={title_json},
+    sidebar=[frequency],
+    main=[pn.pane.Markdown({markdown_json}), wave_plot],
+)
+template.servable()
+'''
+
+    safe_title = html.escape(title)
     html_json = json.dumps(
         f"<h2>{safe_title}</h2><p>Edit <code>main.py</code> to build your Bokeh application.</p>",
         ensure_ascii=False,
@@ -588,11 +675,18 @@ def create_server(
     description: str = "",
     usage: str = "",
     template: str = "blank",
+    framework: str = "bokeh",
 ) -> dict[str, Any]:
-    """Create a new Bokeh directory application and its server.json metadata."""
+    """Create a single-file Bokeh or Panel application and its metadata."""
     validate_server_name(name)
     if template not in SERVER_TEMPLATES:
         raise ManagerError("Unknown server template.", 400)
+    framework = str(framework or "bokeh").strip().lower()
+    if framework not in FRAMEWORKS:
+        raise ManagerError(
+            f'Unsupported framework: "{framework}". Use "bokeh" or "panel".',
+            400,
+        )
     values = {"title": title, "description": description, "usage": usage}
     for field, value in values.items():
         if value is not None and not isinstance(value, str):
@@ -602,7 +696,10 @@ def create_server(
     if path.exists():
         raise ManagerError(f'Server "{name}" already exists.', 409)
     normalized_title = (title or "").strip() or name
-    metadata: dict[str, Any] = {"title": normalized_title}
+    metadata: dict[str, Any] = {
+        "title": normalized_title,
+        "framework": framework,
+    }
     if (description or "").strip():
         metadata["description"] = description.strip()
     if (usage or "").strip():
@@ -610,7 +707,7 @@ def create_server(
     try:
         path.mkdir()
         (path / SERVER_FILE).write_text(
-            _template_code(template, normalized_title),
+            _template_code(template, normalized_title, framework),
             encoding="utf-8",
             newline="\n",
         )
@@ -637,8 +734,8 @@ def _listener_pid(port: int) -> int | None:
     return None
 
 
-def _http_ready(port: int, name: str) -> bool:
-    url = f"http://127.0.0.1:{port}/{urllib.parse.quote(name)}"
+def _http_ready(port: int, route: str) -> bool:
+    url = f"http://127.0.0.1:{port}{route}"
     try:
         with urllib.request.urlopen(url, timeout=1.0) as response:
             return 200 <= response.status < 400
@@ -745,7 +842,7 @@ def _validate_theme(theme: str) -> str:
 
 
 def start_server(name: str, theme: str = "light") -> dict[str, Any]:
-    """Start one Bokeh server in its own process and wait until it responds."""
+    """Start one Bokeh or Panel server and wait until it responds."""
     _validate_theme(theme)
     with _runtime_lock:
         server = get_server(name)
@@ -759,17 +856,24 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             _stop_runtime_locked(existing)
 
         ensure_directories()
-        try:
-            copy_theme(theme, server.path / THEME_FILE)
-            write_page_theme(theme, server.path)
-        except OSError as exc:
-            raise ManagerError(f"Could not write theme files: {exc}", 500) from exc
+        if server.framework == "bokeh":
+            try:
+                copy_theme(theme, server.path / THEME_FILE)
+                write_page_theme(theme, server.path)
+            except OSError as exc:
+                raise ManagerError(f"Could not write theme files: {exc}", 500) from exc
+
+        if server.framework == "panel":
+            route = "/" + urllib.parse.quote(server.entry.stem)
+        else:
+            route = "/" + urllib.parse.quote(server.name)
+
         port = _allocate_port()
         log_path = LOGS_DIR / _log_filename(name)
         log_handle = log_path.open("a", encoding="utf-8", buffering=1)
         log_handle.write(
             f"\n===== manager start {time.strftime('%Y-%m-%d %H:%M:%S')} "
-            f"({BOKEH_HOST}:{port}, theme={theme}) =====\n"
+            f"({server.framework}, {BOKEH_HOST}:{port}, theme={theme}) =====\n"
         )
         log_handle.flush()
 
@@ -778,6 +882,8 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             path=server.path,
             port=port,
             theme=theme,
+            framework=server.framework,
+            route=route,
             log_path=log_path,
             log_handle=log_handle,
             status="starting",
@@ -788,7 +894,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         command = [
             sys.executable,
             "-m",
-            "bokeh",
+            "panel" if server.framework == "panel" else "bokeh",
             "serve",
             "--port",
             str(port),
@@ -809,7 +915,11 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
                     f"localhost:{port}",
                 ]
             )
-        command.append(str(server.path))
+        command.append(
+            str(server.entry)
+            if server.framework == "panel"
+            else str(server.path)
+        )
         creationflags = 0
         if os.name == "nt":
             creationflags = (
@@ -830,7 +940,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         except OSError as exc:
             _stop_runtime_locked(runtime)
             runtime.status = "error"
-            runtime.error = f"Could not start the Bokeh process: {exc}"
+            runtime.error = f"Could not start the server process: {exc}"
             raise ManagerError(runtime.error, 500) from exc
 
         deadline = time.monotonic() + START_TIMEOUT
@@ -840,7 +950,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             if listener is not None:
                 runtime.last_pid = listener
                 runtime.last_seen_at = time.time()
-                if _http_ready(port, name):
+                if _http_ready(port, route):
                     runtime.status = "running"
                     runtime.error = None
                     runtime.started_at = time.time()
@@ -857,9 +967,9 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         _stop_runtime_locked(runtime)
         runtime.status = "error"
         if exit_code is not None:
-            runtime.error = f"Bokeh process failed to start (exit code {exit_code})."
+            runtime.error = f"Server process failed to start (exit code {exit_code})."
         else:
-            runtime.error = "Bokeh server startup timed out."
+            runtime.error = "Server startup timed out."
         message = runtime.error
         if log_tail.strip():
             message = f"{message}\n\n{log_tail[-4000:]}"
@@ -923,7 +1033,7 @@ def _refresh_runtime_locked(runtime: Runtime) -> None:
             return
     runtime.status = "error"
     if not runtime.error:
-        runtime.error = "The Bokeh process exited. Check the logs."
+        runtime.error = "The server process exited. Check the logs."
 
 
 def list_server_states() -> list[dict[str, Any]]:
