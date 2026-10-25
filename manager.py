@@ -478,6 +478,10 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
             _stop_runtime_locked(existing)
 
         ensure_directories()
+        try:
+            copy_theme(theme, server.path / THEME_FILE)
+        except OSError as exc:
+            raise ManagerError(f"无法写入主题文件：{exc}", 500) from exc
         port = _allocate_port()
         log_path = LOGS_DIR / _log_filename(name)
         log_handle = log_path.open("a", encoding="utf-8", buffering=1)
