@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import threading
+import webbrowser
 
 from flask import Flask, Response, jsonify, render_template, request
 
@@ -136,6 +137,8 @@ def main() -> None:
     host = "127.0.0.1"
     url = f"http://{host}:{port}"
     print(f"{APP_TITLE} running at {url}")
+    if os.environ.get("BSM_OPEN_BROWSER") == "1":
+        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
     app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
 
 
