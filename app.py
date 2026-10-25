@@ -26,6 +26,11 @@ def index() -> str:
     return render_template("index.html", app_title=APP_TITLE)
 
 
+@app.get("/editor")
+def editor() -> str:
+    return render_template("editor.html", app_title=f"{APP_TITLE} · Editor")
+
+
 @app.get("/api/health")
 def health() -> Response:
     return jsonify({"ok": True, "app": APP_TITLE})
@@ -90,6 +95,34 @@ def api_update_metadata(name: str) -> Response:
     if payload is None:
         payload = {}
     return jsonify(manager.update_metadata(name, payload))
+
+
+@app.get("/api/servers/<name>/tree")
+def api_server_tree(name: str) -> Response:
+    return jsonify(manager.build_file_tree(name))
+
+
+@app.get("/api/servers/<name>/file")
+def api_read_file(name: str) -> Response:
+    relative = request.args.get("path", "")
+    return jsonify(manager.read_text_file(name, relative))
+
+
+@app.put("/api/servers/<name>/file")
+def api_write_file(name: str) -> Response:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Expected a JSON object with path and content."}), 400
+    relative = payload.get("path", "")
+    content = payload.get("content", "")
+    return jsonify(manager.write_text_file(name, relative, content))
+
+
+@app.after_request
+def add_api_cache_headers(response: Response) -> Response:
+    if response.content_type.startswith("application/json"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/favicon.ico")

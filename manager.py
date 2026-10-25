@@ -363,9 +363,9 @@ def read_text_file(name: str, relative: str) -> dict[str, Any]:
     if b"\x00" in raw:
         raise ManagerError("This is a binary file and cannot be opened in the text editor.", 415)
     try:
-        content = raw.decode("utf-8")
+        content = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
-        content = raw.decode("utf-8-sig", errors="replace")
+        content = raw.decode("utf-8", errors="replace")
     return {
         "path": path.relative_to(server.path).as_posix(),
         "content": content,

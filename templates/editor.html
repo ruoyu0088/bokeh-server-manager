@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{{ app_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/codemirror/lib/codemirror.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/codemirror/addon/fold/foldgutter.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/codemirror/theme/material-darker.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/editor.css') }}">
+</head>
+<body>
+  <div class="editor-shell">
+    <header class="editor-header">
+      <div class="editor-server">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <div class="editor-server-text">
+          <strong id="server-title">Loading…</strong>
+          <span id="server-name">Bokeh source editor</span>
+        </div>
+      </div>
+      <div class="editor-file-heading">
+        <span id="file-path">No file open</span>
+        <span class="badge" id="managed-badge" hidden>auto</span>
+        <span class="badge badge-meta" id="metadata-badge" hidden>meta</span>
+        <span class="dirty-dot" id="dirty-dot" hidden title="Unsaved changes"></span>
+      </div>
+      <div class="editor-actions">
+        <span class="save-state" id="save-state">Ready</span>
+        <button class="icon-button icon-button-small" id="refresh-tree" type="button" title="Refresh file tree" aria-label="Refresh file tree">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
+        </button>
+        <button class="button button-primary button-compact" id="save-file" type="button" disabled>Save</button>
+      </div>
+    </header>
+
+    <div class="editor-body">
+      <aside class="editor-sidebar" aria-label="Files">
+        <div class="editor-sidebar-head">
+          <span>Files</span>
+          <span class="file-count" id="file-count"></span>
+        </div>
+        <div class="file-tree" id="file-tree"></div>
+        <div class="editor-sidebar-foot">
+          <span id="tree-status">Loading files…</span>
+        </div>
+      </aside>
+
+      <main class="editor-main">
+        <div class="editor-host-wrap">
+          <div class="editor-host" id="editor-host"></div>
+          <div class="editor-empty" id="editor-empty">
+            <strong>Select a file</strong>
+            <span>Choose a file from the tree to start editing.</span>
+          </div>
+          <div class="editor-error" id="editor-error" hidden></div>
+        </div>
+        <div class="editor-statusbar">
+          <span id="cursor-pos">Ln 1, Col 1</span>
+          <span id="selection-info"></span>
+          <span class="statusbar-spacer"></span>
+          <span id="file-mode">Plain text</span>
+          <span>UTF-8</span>
+          <span>Ctrl+S to save</span>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="{{ url_for('static', filename='vendor/codemirror/lib/codemirror.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/xml/xml.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/javascript/javascript.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/css/css.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/htmlmixed/htmlmixed.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/python/python.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/yaml/yaml.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/mode/markdown/markdown.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/edit/closebrackets.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/edit/matchbrackets.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/selection/active-line.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/foldcode.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/foldgutter.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/brace-fold.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/comment-fold.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/indent-fold.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/codemirror/addon/fold/xml-fold.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+</body>
+</html>
