@@ -1,4 +1,8 @@
+**English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+
 # Bokeh Server Manager
+
+![Bokeh Server Manager](docs/screenshot.png)
 
 A local web interface for running and managing several Bokeh server applications from one place.
 
@@ -6,6 +10,7 @@ Each application runs in its own Bokeh process. The manager assigns a free port 
 
 ## Features
 
+- Multilingual interface: English, Simplified Chinese, and Japanese.
 - Collapsible, resizable sidebar. Toggle it with `Ctrl+B` (or `Cmd+B`).
 - One process per Bokeh server, with an automatically assigned port.
 - Multiple running servers displayed as tabs; each tab is an iframe.
@@ -16,6 +21,16 @@ Each application runs in its own Bokeh process. The manager assigns a free port 
 - Bokeh `--dev` live reloading. The manager refreshes the iframe when the Bokeh process restarts.
 - Per-server metadata: title, description, and usage notes.
 - Two ready-to-run examples.
+
+## Languages
+
+Use the language selector in the sidebar footer to switch the interface between English, Simplified Chinese, and Japanese.
+
+- The default language follows the browser language (`zh*` uses Simplified Chinese, `ja*` uses Japanese, everything else uses English).
+- The selection is saved in the browser and survives reloads.
+- The manager and any open editor window update immediately. Open files and unsaved changes are preserved.
+- Bokeh application content inside the iframe is not translated.
+- `server.json` metadata is displayed as entered and is not translated.
 
 ## Requirements
 
@@ -80,6 +95,7 @@ Each server can have a `server.json` file:
 - `title` is used in the sidebar and tab titles. It falls back to the directory name.
 - `description` is shown under the server title.
 - `usage` is shown in the **Server information** dialog.
+- Metadata is not translated; it is displayed exactly as entered.
 - Unknown JSON keys are preserved.
 - Use the info button on a server card to edit these fields without touching JSON.
 - A malformed `server.json` is reported in the UI but does not prevent the server from starting.
@@ -117,7 +133,7 @@ Click the pencil button on a server card to open the editor in a separate window
 - `Ctrl+S` saves the current file.
 - Unsaved changes are marked and prompt before switching files or closing the window.
 - `theme.yaml` and `templates/index.html` are marked `AUTO`; `server.json` is marked `META`.
-- The editor follows the manager's light/dark theme.
+- The editor follows the manager's light/dark theme and language.
 
 ## Creating a server
 
@@ -135,7 +151,7 @@ Two examples are included:
 - **Sine Wave Lab** (`servers/sine_wave`) - animated sine wave with waveform, frequency, amplitude, speed, and phase controls.
 - **Scatter Explorer** (`servers/scatter_dashboard`) - synthetic scatter plot with category filtering, marker sizing, a regression line, and a linked Y histogram.
 
-Start them from the sidebar to verify the full workflow, including theme switching and `--dev` reloading.
+Start them from the sidebar to verify the full workflow, including theme switching, language switching, and `--dev` reloading.
 
 ## API
 
@@ -155,7 +171,7 @@ PUT    /api/servers/<name>/file
 PUT    /api/servers/<name>/metadata
 ```
 
-Start, stop, reload, and metadata requests take JSON bodies. File paths are restricted to the selected server directory.
+Start, stop, reload, and metadata requests take JSON bodies. File paths are restricted to the selected server directory. Send `X-BSM-Lang: en | zh-CN | ja` to localize manager error messages.
 
 ## Notes
 
