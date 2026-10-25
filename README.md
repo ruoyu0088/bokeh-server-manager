@@ -11,6 +11,7 @@ Each application runs in its own Bokeh or Panel process. The manager assigns a f
 ## Features
 
 - Multilingual interface: English, Simplified Chinese, and Japanese.
+- Optional single-password web login with a read-only guest mode.
 - Configurable manager port and bind address, with opt-in LAN access.
 - Collapsible, resizable sidebar. Toggle it with `Ctrl+B` (or `Cmd+B`).
 - One process per Bokeh or Panel server, with an automatically assigned port.
@@ -20,6 +21,7 @@ Each application runs in its own Bokeh or Panel process. The manager assigns a f
 - Light / dark themes for the manager, the editor, and Bokeh/Panel pages.
 - Source editor with a file tree, syntax highlighting, file creation/deletion, and `Ctrl+S` saving.
 - Bokeh and Panel `--dev` live reloading. The manager refreshes the iframe when the Bokeh process restarts; Panel reloads in place.
+- CSRF-protected writes, login rate limiting, and session invalidation after a password reset.
 - Per-server metadata: title, description, and usage notes.
 - Three ready-to-run examples, including a Panel app.
 
@@ -49,22 +51,93 @@ The Bokeh and Panel processes need `MKL_THREADING_LAYER=TBB` with this environme
 
 ## Quick start
 
-Double-click `start.bat` for the defaults: `127.0.0.1:8010`.
+Double-click `start.bat` for the existing local mode: `127.0.0.1:8010`, no login.
 
-The manager opens the browser automatically.
-
-To change the port or bind address:
+To use the optional login-protected web mode, first set the single password:
 
 ```bat
-start.bat --port 8080
-start.bat --port 8010 --host 127.0.0.1
-start.bat --port 8010 --host 0.0.0.0
+start.bat --web --set-password
 ```
 
+Then start web mode:
+
+```bat
+start.bat --web
+start.bat --web --port 8010 --host 127.0.0.1
+start.bat --web --port 8010 --host 0.0.0.0
+```
+
+- `--web` enables the login page and read-only guest mode.
+- `--set-password` requires `--web`; it prompts twice with hidden input and keeps the console open.
 - `--port` defaults to `8010`.
-- `--host` defaults to `127.0.0.1`.
-- Use `--host 0.0.0.0` to allow access from other computers on the LAN.
+- `--host` defaults to `127.0.0.1`; `0.0.0.0` is only used when explicitly passed.
 - `start.bat --help` shows the available options.
+
+Without `--web`, the existing local manager runs without authentication and binds only to loopback by default.
+
+## Web login
+
+The web mode has one password and no usernames, registration, roles, OAuth, or password reset page.
+
+### Set the password
+
+```bat
+start.bat --web --set-password
+```
+
+- The password is typed twice with hidden input.
+- Empty passwords are rejected; there is no minimum length or complexity rule.
+- The password is stored as a salted scrypt hash in `.runtime/web_auth.json`, which is ignored by Git.
+- The password itself is never written to a log, URL, page, or frontend storage.
+- The file also stores a random session secret and authentication epoch. Resetting the password invalidates old sessions.
+- If the credential file is missing, web mode refuses to start and prints:
+  ```text
+  Run: start.bat --web --set-password
+  ```
+
+### Login and guest mode
+
+- Every manager page and API requires a login, including access from `127.0.0.1` and `localhost`.
+- The login page accepts only a password.
+- **Continue without password** enters read-only guest mode.
+- Requested post-login redirects are restricted to internal paths.
+- The sidebar provides an **Enter password** button to upgrade from guest to editor, and a **Sign out** button.
+
+Guest permissions:
+
+- View source code and the file tree.
+- View logs, metadata, server status, and running Bokeh/Panel apps.
+- Start, stop, and reload servers.
+- Cannot save or edit source files.
+- Cannot create or delete files.
+- Cannot create servers.
+- Cannot edit metadata.
+
+### Sessions and protection
+
+- Session cookies are `HttpOnly` and `SameSite=Lax`. The first version uses plain HTTP, so `Secure` is not set.
+- All state-changing requests require a CSRF token, including login, guest login, logout, start, stop, reload, file writes, and metadata changes.
+- Login failures are limited to 5 per IP in a 5-minute window. Further attempts return `429` temporarily.
+- Login failure messages are generic and do not distinguish between causes.
+- A password reset changes the authentication epoch and session secret, invalidating existing sessions (and all sessions after a restart).
+- The manager APIs return `401` for unauthenticated requests and `403` for guest attempts to write source or metadata.
+
+### Security limits
+
+- The manager uses HTTP only; LAN traffic is not encrypted. The login page and startup log warn about this when binding to `0.0.0.0`.
+- Login protects the manager UI and API. Bokeh/Panel child processes are served on separate ports and are **not** covered by this login. Anyone who knows a child port can access that app directly. Keep the service on a trusted network.
+- This is intentionally a single-machine, single-password tool. It is not a multi-user or central server.
+
+### Manual web start
+
+```bat
+set MKL_THREADING_LAYER=TBB
+set BSM_HOST=127.0.0.1
+set BSM_PORT=8010
+C:\pixi_env\.pixi\envs\default\python.exe -u app.py --web
+```
+
+The credential file must already exist. When using `start.bat`, only an explicit `--host 0.0.0.0` enables LAN binding for web mode; an inherited `BSM_HOST` environment variable is ignored in that mode.
 
 To run it manually:
 
@@ -75,9 +148,9 @@ set BSM_PORT=8010
 C:\pixi_env\.pixi\envs\default\python.exe -u app.py
 ```
 
-When binding to `0.0.0.0`, open `http://<this-computer-ip>:8010` from another computer. The manager automatically uses the hostname or IP used by the browser for the Bokeh iframe URLs, and the child Bokeh servers bind to all interfaces as well.
+When binding to `0.0.0.0`, open `http://<this-computer-ip>:8010` from another computer. The manager automatically uses the hostname or IP used by the browser for the iframe URLs, and the child Bokeh/Panel servers bind to all interfaces as well.
 
-Windows Firewall may need to allow Python for both the manager port and the automatically assigned Bokeh ports on private networks.
+Windows Firewall may need to allow Python for the manager port and the automatically assigned Bokeh/Panel ports on private networks.
 
 ## Server directory convention
 
@@ -234,6 +307,12 @@ Start them from the sidebar to verify the full workflow, including theme switchi
 The manager exposes a small local JSON API:
 
 ```text
+GET    /login
+POST   /login
+POST   /login/guest
+POST   /logout
+GET    /api/auth/status
+POST   /api/auth/login
 GET    /api/servers
 POST   /api/servers
 GET    /api/servers/<name>
@@ -251,12 +330,16 @@ PUT    /api/servers/<name>/metadata
 
 Start, stop, reload, and metadata requests take JSON bodies. `POST /api/servers` accepts `"framework": "bokeh" | "panel"`. File paths are restricted to the selected server directory. Send `X-BSM-Lang: en | zh-CN | ja` to localize manager error messages.
 
+In `--web` mode, all manager API routes except the login endpoints require a session. Write requests require `X-CSRF-Token`; guest sessions may start/stop/reload but receive `403` for file, server-creation, and metadata writes. A missing session returns `401` (or redirects page requests to `/login`).
+
 ## Notes
 
-- The default bind address is `127.0.0.1`. `--host 0.0.0.0` exposes the manager to the LAN.
-- The manager has no authentication and can edit local files and run code. Only expose it on a trusted network.
-- The manager is a local development tool, not a production deployment server.
+- The default local mode binds `127.0.0.1` and has no login. `--web` enables the single-password login.
+- In web mode, only an explicit `--host 0.0.0.0` opens the manager to the LAN. The login page and startup log warn that HTTP traffic is not encrypted.
+- Login protects the manager UI and API; Bokeh/Panel child ports are directly accessible and are not covered by that login. Only use the LAN mode on a trusted network.
+- The manager is a local development tool, not a production deployment server, and has no multi-user roles or central authentication.
 - LAN access also requires the automatically assigned Bokeh/Panel ports to be reachable.
 - `start.bat` hard-codes the Python path `C:\pixi_env\.pixi\envs\default\python.exe`. Change `PYTHON` in the file if your environment is elsewhere.
+- The web credential file is `.runtime/web_auth.json` and is ignored by Git. It contains a salted scrypt hash, a session secret, and an authentication epoch, never the password.
 - Generated Bokeh theme files are ignored by Git. They are recreated on demand.
 - Panel support currently targets single-file `main.py` scripts, not notebooks or multi-page directory apps.
