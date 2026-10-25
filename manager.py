@@ -11,6 +11,7 @@ on-disk conventions:
 from __future__ import annotations
 
 import atexit
+import html
 import json
 import os
 import re
@@ -42,6 +43,7 @@ METADATA_FILE = "server.json"
 MAX_EDIT_BYTES = 2 * 1024 * 1024
 MAX_METADATA_BYTES = 64 * 1024
 METADATA_FIELDS = ("title", "description", "usage")
+SERVER_TEMPLATES = {"blank", "interactive"}
 HOST = "127.0.0.1"
 START_TIMEOUT = 20.0
 STOP_TIMEOUT = 5.0
@@ -402,6 +404,26 @@ def write_text_file(name: str, relative: str, content: str) -> dict[str, Any]:
     }
 
 
+def _write_metadata_file(server_dir: Path, metadata: dict[str, Any]) -> None:
+    encoded = (json.dumps(metadata, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    if len(encoded) > MAX_METADATA_BYTES:
+        raise ManagerError("server.json is too large (limit: 64 KB).", 413)
+    target = server_dir / METADATA_FILE
+    temp_path = server_dir / f".{METADATA_FILE}.tmp-{os.getpid()}"
+    try:
+        with temp_path.open("wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, target)
+    except OSError as exc:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise ManagerError(f"Could not save server.json: {exc}", 500) from exc
+
+
 def update_metadata(name: str, payload: dict[str, Any]) -> dict[str, Any]:
     """Update title/description/usage in server.json and return the server state."""
     if not isinstance(payload, dict):
@@ -421,24 +443,93 @@ def update_metadata(name: str, payload: dict[str, Any]) -> dict[str, Any]:
             metadata[field] = value
         else:
             metadata.pop(field, None)
+    _write_metadata_file(server.path, metadata)
+    return server_state(name)
 
-    encoded = (json.dumps(metadata, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    if len(encoded) > MAX_METADATA_BYTES:
-        raise ManagerError("server.json is too large (limit: 64 KB).", 413)
-    target = server.path / METADATA_FILE
-    temp_path = server.path / f".{METADATA_FILE}.tmp-{os.getpid()}"
+
+def _template_code(template: str, title: str) -> str:
+    safe_title = html.escape(title)
+    title_json = json.dumps(title, ensure_ascii=False)
+    html_json = json.dumps(
+        f"<h2>{safe_title}</h2><p>Edit <code>main.py</code> to build your Bokeh application.</p>",
+        ensure_ascii=False,
+    )
+    if template == "blank":
+        return f'''"""A minimal Bokeh directory application."""
+
+from bokeh.io import curdoc
+from bokeh.models import Div
+
+curdoc().title = {title_json}
+curdoc().add_root(
+    Div(text={html_json})
+)
+'''
+    return f'''"""An interactive Bokeh directory application."""
+
+import numpy as np
+
+from bokeh.io import curdoc
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, Div, Slider
+from bokeh.plotting import figure
+
+curdoc().title = {title_json}
+
+source = ColumnDataSource(data={{"x": [0.0], "y": [0.0]}})
+plot = figure(height=380, sizing_mode="stretch_width", title="Sine wave")
+plot.line("x", "y", source=source, line_width=3)
+slider = Slider(start=1, end=20, value=5, step=1, title="Points")
+intro = Div(text={html_json})
+
+
+def update(attr, old, new):
+    x = np.linspace(0, 4 * np.pi, int(new) * 20)
+    source.data = {{"x": x, "y": np.sin(x)}}
+
+
+slider.on_change("value", update)
+update(None, None, slider.value)
+curdoc().add_root(column(intro, slider, plot))
+'''
+
+
+def create_server(
+    name: str,
+    title: str = "",
+    description: str = "",
+    usage: str = "",
+    template: str = "blank",
+) -> dict[str, Any]:
+    """Create a new Bokeh directory application and its server.json metadata."""
+    validate_server_name(name)
+    if template not in SERVER_TEMPLATES:
+        raise ManagerError("Unknown server template.", 400)
+    values = {"title": title, "description": description, "usage": usage}
+    for field, value in values.items():
+        if value is not None and not isinstance(value, str):
+            raise ManagerError(f'Metadata field "{field}" must be a string.', 400)
+    ensure_directories()
+    path = server_path(name)
+    if path.exists():
+        raise ManagerError(f'Server "{name}" already exists.', 409)
+    normalized_title = (title or "").strip() or name
+    metadata: dict[str, Any] = {"title": normalized_title}
+    if (description or "").strip():
+        metadata["description"] = description.strip()
+    if (usage or "").strip():
+        metadata["usage"] = usage.strip()
     try:
-        with temp_path.open("wb") as handle:
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, target)
-    except OSError as exc:
-        try:
-            temp_path.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise ManagerError(f"Could not save server.json: {exc}", 500) from exc
+        path.mkdir()
+        (path / SERVER_FILE).write_text(
+            _template_code(template, normalized_title),
+            encoding="utf-8",
+            newline="\n",
+        )
+        _write_metadata_file(path, metadata)
+    except Exception:
+        shutil.rmtree(path, ignore_errors=True)
+        raise
     return server_state(name)
 
 

@@ -790,6 +790,99 @@
     return close;
   }
 
+  function showNewServerDialog() {
+    const body = `
+      <div class="form-error" id="new-server-error"></div>
+      <form id="new-server-form" autocomplete="off">
+        <div class="form-field">
+          <label for="new-server-name">Directory name</label>
+          <input id="new-server-name" maxlength="64" placeholder="my_bokeh_app" required>
+          <div class="form-hint">Letters, numbers, underscores, or hyphens. The app is created under <code>servers/&lt;name&gt;</code>.</div>
+        </div>
+        <div class="form-field">
+          <label for="new-server-title">Title</label>
+          <input id="new-server-title" maxlength="120" placeholder="My Bokeh app">
+          <div class="form-hint">Shown in the sidebar and tab. Defaults to the directory name.</div>
+        </div>
+        <div class="form-field">
+          <label>Template</label>
+          <div class="template-grid">
+            <label class="template-option selected">
+              <input type="radio" name="new-template" value="blank" checked>
+              <strong>Blank</strong>
+              <span>A minimal Bokeh page. A good starting point for custom apps.</span>
+            </label>
+            <label class="template-option">
+              <input type="radio" name="new-template" value="interactive">
+              <strong>Interactive</strong>
+              <span>A sine-wave plot with a slider and a server-side callback.</span>
+            </label>
+          </div>
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="new-server-start" checked> Start immediately</label>
+      </form>
+    `;
+    openModal({
+      title: "New Bokeh server",
+      body,
+      footer:
+        '<button class="button button-ghost" type="button" data-modal-close="true">Cancel</button>' +
+        '<button class="button button-primary" id="create-server" type="submit" form="new-server-form">Create</button>',
+      onMount: (close) => {
+        const form = $("#new-server-form");
+        const errorBox = $("#new-server-error");
+        const nameInput = $("#new-server-name");
+        const createButton = $("#create-server");
+        const options = Array.from(form.querySelectorAll(".template-option"));
+        const refreshSelection = () => {
+          for (const option of options) {
+            option.classList.toggle("selected", $("input", option).checked);
+          }
+        };
+        for (const option of options) {
+          $("input", option).addEventListener("change", refreshSelection);
+        }
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          errorBox.classList.remove("visible");
+          const name = nameInput.value.trim();
+          if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(name)) {
+            errorBox.textContent =
+              "Use letters, numbers, underscores, or hyphens. The name must start with a letter or number.";
+            errorBox.classList.add("visible");
+            nameInput.focus();
+            return;
+          }
+          const template = $('input[name="new-template"]:checked', form).value;
+          const start = $("#new-server-start").checked;
+          createButton.disabled = true;
+          createButton.textContent = "Creating…";
+          try {
+            const state = await apiFetch("/api/servers", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name,
+                title: $("#new-server-title").value.trim(),
+                template,
+              }),
+            });
+            toast(`Created “${state.title || name}”.`, "success");
+            close();
+            await refreshServers({ silent: true });
+            if (start) await startServer(name);
+          } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.classList.add("visible");
+            createButton.disabled = false;
+            createButton.textContent = "Create";
+          }
+        });
+        nameInput.focus();
+      },
+    });
+  }
+
   function showServerInfo(name) {
     const server = serverByName(name);
     if (!server) return;
@@ -930,6 +1023,7 @@
     applyTheme(currentTheme() === "dark" ? "light" : "dark", true);
   });
   elements.refreshServers.addEventListener("click", () => refreshServers());
+  elements.newServer.addEventListener("click", showNewServerDialog);
 
   elements.serverList.addEventListener("click", (event) => {
     const actionNode = event.target.closest("[data-action]");

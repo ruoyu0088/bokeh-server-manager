@@ -41,6 +41,19 @@ def api_servers() -> Response:
     )
 
 
+@app.post("/api/servers")
+def api_create_server() -> Response:
+    payload = request.get_json(silent=True) or {}
+    state = manager.create_server(
+        payload.get("name", ""),
+        title=payload.get("title", ""),
+        description=payload.get("description", ""),
+        usage=payload.get("usage", ""),
+        template=payload.get("template", "blank"),
+    )
+    return jsonify(state), 201
+
+
 @app.get("/api/servers/<name>")
 def api_server(name: str) -> Response:
     return jsonify(manager.server_state(name))
