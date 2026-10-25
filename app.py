@@ -9,6 +9,7 @@ import webbrowser
 from flask import Flask, Response, jsonify, render_template, request
 
 import manager
+from i18n_backend import normalize_language, translate_error
 
 APP_TITLE = "Bokeh Server Manager"
 DEFAULT_PORT = 8010
@@ -17,9 +18,23 @@ app = Flask(__name__)
 app.json.ensure_ascii = False
 
 
+def request_language() -> str:
+    return normalize_language(request.headers.get("X-BSM-Lang"))
+
+
+def localize_state(state: dict, language: str) -> dict:
+    localized = dict(state)
+    for key in ("error", "metadata_error"):
+        value = localized.get(key)
+        if value:
+            localized[key] = translate_error(str(value), language)
+    return localized
+
+
 @app.errorhandler(manager.ManagerError)
 def handle_manager_error(error: manager.ManagerError) -> tuple[Response, int]:
-    return jsonify({"error": error.message}), error.status_code
+    message = translate_error(error.message, request_language())
+    return jsonify({"error": message}), error.status_code
 
 
 @app.get("/")
@@ -39,9 +54,13 @@ def health() -> Response:
 
 @app.get("/api/servers")
 def api_servers() -> Response:
+    language = request_language()
     return jsonify(
         {
-            "servers": manager.list_server_states(),
+            "servers": [
+                localize_state(state, language)
+                for state in manager.list_server_states()
+            ],
             "themes": ["light", "dark"],
         }
     )
@@ -57,31 +76,34 @@ def api_create_server() -> Response:
         usage=payload.get("usage", ""),
         template=payload.get("template", "blank"),
     )
-    return jsonify(state), 201
+    return jsonify(localize_state(state, request_language())), 201
 
 
 @app.get("/api/servers/<name>")
 def api_server(name: str) -> Response:
-    return jsonify(manager.server_state(name))
+    return jsonify(localize_state(manager.server_state(name), request_language()))
 
 
 @app.post("/api/servers/<name>/start")
 def api_start_server(name: str) -> Response:
     payload = request.get_json(silent=True) or {}
     theme = str(payload.get("theme", "light"))
-    return jsonify(manager.start_server(name, theme))
+    state = manager.start_server(name, theme)
+    return jsonify(localize_state(state, request_language()))
 
 
 @app.post("/api/servers/<name>/stop")
 def api_stop_server(name: str) -> Response:
-    return jsonify(manager.stop_server(name))
+    state = manager.stop_server(name)
+    return jsonify(localize_state(state, request_language()))
 
 
 @app.post("/api/servers/<name>/reload")
 def api_reload_server(name: str) -> Response:
     payload = request.get_json(silent=True) or {}
     theme = str(payload.get("theme", "light"))
-    return jsonify(manager.reload_server(name, theme))
+    state = manager.reload_server(name, theme)
+    return jsonify(localize_state(state, request_language()))
 
 
 @app.get("/api/servers/<name>/logs")
@@ -95,7 +117,8 @@ def api_update_metadata(name: str) -> Response:
     payload = request.get_json(silent=True)
     if payload is None:
         payload = {}
-    return jsonify(manager.update_metadata(name, payload))
+    state = manager.update_metadata(name, payload)
+    return jsonify(localize_state(state, request_language()))
 
 
 @app.get("/api/servers/<name>/tree")
