@@ -467,6 +467,19 @@ svg {
   color: var(--warning);
 }
 
+.framework-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 17px;
+}
+
 .status-dot {
   display: inline-block;
   flex: 0 0 auto;

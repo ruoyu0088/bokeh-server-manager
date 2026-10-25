@@ -329,7 +329,12 @@
       const canReload = status !== "stopped" && status !== "stopping";
       const title = serverTitle(server);
       const showDirectory = server.title && server.title !== server.name;
-      const metaParts = [`<span>${statusLabel(status)}</span>`];
+      const metaParts = [
+        `<span>${statusLabel(status)}</span>`,
+        `<span class="framework-chip">${
+          server.framework === "panel" ? "Panel" : "Bokeh"
+        }</span>`,
+      ];
       if (server.port && status !== "stopped") {
         metaParts.push(`<span class="server-port">:${server.port}</span>`);
       }
@@ -881,6 +886,16 @@
           <div class="form-hint">${escapeHtml(t("new.nameHint"))}</div>
         </div>
         <div class="form-field">
+          <label for="new-server-framework">${escapeHtml(
+            t("new.framework"),
+          )}</label>
+          <select id="new-server-framework">
+            <option value="bokeh">Bokeh</option>
+            <option value="panel">Panel</option>
+          </select>
+          <div class="form-hint">${escapeHtml(t("new.frameworkHint"))}</div>
+        </div>
+        <div class="form-field">
           <label>${escapeHtml(t("new.template"))}</label>
           <div class="template-grid">
             <label class="template-option selected">
@@ -935,6 +950,7 @@
             return;
           }
           const template = $('input[name="new-template"]:checked', form).value;
+          const framework = $("#new-server-framework").value;
           const start = $("#new-server-start").checked;
           createButton.disabled = true;
           createButton.textContent = t("new.creating");
@@ -946,6 +962,7 @@
                 name,
                 title: $("#new-server-title").value.trim(),
                 template,
+                framework,
               }),
             });
             toast(
@@ -1010,6 +1027,8 @@
           <div class="form-hint">${escapeHtml(t("metadata.usageHint"))}</div>
         </div>
         <div class="form-hint">${escapeHtml(
+          t("metadata.framework"),
+        )} <code>${escapeHtml(server.framework || "bokeh")}</code> · ${escapeHtml(
           t("metadata.directory"),
         )} <code>${escapeHtml(name)}</code> · ${escapeHtml(
           t("metadata.savedTo"),

@@ -9,24 +9,24 @@
       "sidebar.aria": "Server management sidebar",
       "sidebar.collapseTitle": "Collapse sidebar (Ctrl+B)",
       "sidebar.expandTitle": "Show sidebar (Ctrl+B)",
-      "sidebar.servers": "Bokeh Servers",
+      "sidebar.servers": "Servers",
       "sidebar.new": "New",
-      "sidebar.newTitle": "Create a new Bokeh server",
+      "sidebar.newTitle": "Create a new server",
       "sidebar.refreshTitle": "Refresh server list",
       "sidebar.empty":
-        "No Bokeh servers yet.<br>Add an application under <code>servers/</code> or create one here.",
+        "No servers yet.<br>Add an application under <code>servers/</code> or create one here.",
       "sidebar.connected": "Connected",
       "sidebar.offline": "Manager offline",
       "sidebar.connectionTitle": "Manager connection status",
       "sidebar.resizeTitle": "Drag to resize sidebar; double-click to reset",
       "sidebar.shortcutTitle": "Show / hide sidebar",
       "sidebar.language": "Language",
-      "empty.title": "Open a Bokeh server",
+      "empty.title": "Open a server",
       "empty.body":
         "Start a server from the sidebar and its UI will open here in a tab. You can keep several servers open at once.",
       "empty.shortcut":
         "Press <kbd>Ctrl</kbd> + <kbd>B</kbd> to show or hide the sidebar.",
-      "tabs.aria": "Open Bokeh servers",
+      "tabs.aria": "Open servers",
 
       "theme.light": "Light",
       "theme.dark": "Dark",
@@ -50,7 +50,7 @@
       "uptime.minutes": "{n}m",
       "uptime.hours": "{h}h {m}m",
 
-      "server.invalid": "This directory is not a valid Bokeh directory application.",
+      "server.invalid": "This directory is not a valid application directory.",
       "server.actions.start": "Start",
       "server.actions.reload":
         "Reload: restart the process and apply the current theme",
@@ -64,24 +64,24 @@
       "server.actions.openTab": "Open server tab",
       "server.actions.working": "Working…",
       "server.closeTab": "Close {title} tab",
-      "server.iframeTitle": "{title} Bokeh application",
+      "server.iframeTitle": "{title} application",
 
       "frame.connecting": "Connecting to {title}",
       "frame.connectingDetail":
-        "The Bokeh UI will appear here when the server is ready.",
+        "The application UI will appear here when the server is ready.",
       "frame.processChanged":
-        "The server process changed. Reloading the Bokeh UI.",
+        "The server process changed. Reloading the application UI.",
       "frame.reloading": "{title} is reloading",
       "frame.reloadingDetail":
-        "Source changes were picked up by Bokeh --dev. Refreshing the UI.",
+        "Source changes were picked up. Refreshing the UI.",
       "frame.unavailable": "{title} is unavailable",
       "frame.unavailableDetail":
         "Check the server logs, fix the problem, then reload.",
       "frame.starting": "{title} is starting",
       "frame.startingDetail":
-        "The Bokeh process is preparing. The UI will appear automatically.",
+        "The server process is preparing. The UI will appear automatically.",
       "frame.back": "{title} is back",
-      "frame.backDetail": "Reloading the Bokeh UI.",
+      "frame.backDetail": "Reloading the application UI.",
 
       "action.started": "Started “{title}” on port {port}.",
       "action.startFailed": "Start failed: {error}",
@@ -93,7 +93,7 @@
       "action.reloaded": "Reloaded “{title}” on port {port}.",
       "action.reconnect": "Reconnecting",
       "action.reconnectDetail":
-        "The process restarted. Loading the updated Bokeh UI.",
+        "The process restarted. Loading the updated application UI.",
       "action.reloadFailed": "Reload failed: {error}",
       "action.popupBlocked":
         "The browser blocked the editor window. Allow pop-ups and try again.",
@@ -114,21 +114,23 @@
       "logs.refresh": "Refresh",
       "logs.close": "Close",
 
-      "new.title": "New Bokeh server",
+      "new.title": "New server",
       "new.directory": "Directory name",
       "new.directoryHint":
         "Letters, numbers, underscores, or hyphens. The app is created under <code>servers/&lt;name&gt;</code>.",
       "new.name": "Title",
-      "new.namePlaceholder": "My Bokeh app",
+      "new.namePlaceholder": "My app",
       "new.nameHint":
         "Shown in the sidebar and tab. Defaults to the directory name.",
+      "new.framework": "Framework",
+      "new.frameworkHint": "Choose a Bokeh directory application or a single-file Panel script.",
       "new.template": "Template",
       "new.blank": "Blank",
       "new.blankHint":
-        "A minimal Bokeh page. A good starting point for custom apps.",
+        "A minimal application. A good starting point for custom apps.",
       "new.interactive": "Interactive",
       "new.interactiveHint":
-        "A sine-wave plot with a slider and a server-side callback.",
+        "A slider and a plot with a server-side callback.",
       "new.start": "Start immediately",
       "new.creating": "Creating…",
       "new.created": "Created “{title}”.",
@@ -149,12 +151,13 @@
       "metadata.usageHint":
         "Shown in this dialog. Plain text; line breaks are preserved.",
       "metadata.directory": "Directory:",
+      "metadata.framework": "Framework:",
       "metadata.savedTo": "Saved to server.json",
       "metadata.saving": "Saving…",
       "metadata.saved": "Server information saved.",
 
       "editor.loading": "Loading…",
-      "editor.subtitle": "Bokeh source editor",
+      "editor.subtitle": "Source editor",
       "editor.noFile": "No file open",
       "editor.autoBadge": "auto",
       "editor.metaBadge": "meta",
@@ -231,24 +234,24 @@
       "sidebar.aria": "服务器管理侧栏",
       "sidebar.collapseTitle": "收起侧栏 (Ctrl+B)",
       "sidebar.expandTitle": "打开侧栏 (Ctrl+B)",
-      "sidebar.servers": "Bokeh 服务器",
+      "sidebar.servers": "服务器",
       "sidebar.new": "新建",
-      "sidebar.newTitle": "新建 Bokeh 服务器",
+      "sidebar.newTitle": "新建服务器",
       "sidebar.refreshTitle": "刷新服务器列表",
       "sidebar.empty":
-        "还没有 Bokeh 服务器。<br>把应用放进 <code>servers/</code> 目录，或在这里新建。",
+        "还没有服务器。<br>把应用放进 <code>servers/</code> 目录，或在这里新建。",
       "sidebar.connected": "已连接",
       "sidebar.offline": "管理器未连接",
       "sidebar.connectionTitle": "管理器连接状态",
       "sidebar.resizeTitle": "拖动调整侧栏宽度，双击恢复默认",
       "sidebar.shortcutTitle": "显示 / 隐藏侧栏",
       "sidebar.language": "语言",
-      "empty.title": "打开一个 Bokeh 服务",
+      "empty.title": "打开一个服务",
       "empty.body":
         "从左侧启动服务，它的界面会在这里以标签页打开。可以同时打开多个服务。",
       "empty.shortcut":
         "按 <kbd>Ctrl</kbd> + <kbd>B</kbd> 显示或隐藏左侧栏。",
-      "tabs.aria": "已打开的 Bokeh 服务",
+      "tabs.aria": "已打开的服务",
 
       "theme.light": "亮色",
       "theme.dark": "暗色",
@@ -272,7 +275,7 @@
       "uptime.minutes": "{n} 分钟",
       "uptime.hours": "{h} 小时 {m} 分",
 
-      "server.invalid": "这个目录不是有效的 Bokeh 目录应用。",
+      "server.invalid": "这个目录不是有效的应用目录。",
       "server.actions.start": "启动",
       "server.actions.reload": "重新载入：重启进程并应用当前主题",
       "server.actions.stop": "停止",
@@ -284,20 +287,20 @@
       "server.actions.openTab": "打开服务标签页",
       "server.actions.working": "处理中…",
       "server.closeTab": "关闭 {title} 标签页",
-      "server.iframeTitle": "{title} Bokeh 应用",
+      "server.iframeTitle": "{title} 应用",
 
       "frame.connecting": "正在连接 {title}",
-      "frame.connectingDetail": "Bokeh 服务就绪后，界面会自动显示在这里。",
-      "frame.processChanged": "服务进程已更新，正在重新加载 Bokeh 界面。",
+      "frame.connectingDetail": "服务就绪后，界面会自动显示在这里。",
+      "frame.processChanged": "服务进程已更新，正在重新加载应用界面。",
       "frame.reloading": "{title} 正在重新载入",
       "frame.reloadingDetail":
-        "Bokeh --dev 已检测到源码变化，正在刷新界面。",
+        "已检测到源码变化，正在刷新界面。",
       "frame.unavailable": "{title} 暂时不可用",
       "frame.unavailableDetail": "查看服务日志，修复问题后重新载入。",
       "frame.starting": "{title} 正在启动",
-      "frame.startingDetail": "Bokeh 进程准备中，界面会自动出现。",
+      "frame.startingDetail": "服务器进程准备中，界面会自动出现。",
       "frame.back": "{title} 已恢复",
-      "frame.backDetail": "正在重新加载 Bokeh 界面。",
+      "frame.backDetail": "正在重新加载应用界面。",
 
       "action.started": "已启动“{title}”，端口 {port}。",
       "action.startFailed": "启动失败：{error}",
@@ -307,7 +310,7 @@
       "action.reloadingDetail": "进程将重新启动，并应用当前界面主题。",
       "action.reloaded": "已重新载入“{title}”，端口 {port}。",
       "action.reconnect": "正在重新连接",
-      "action.reconnectDetail": "进程已重启，正在加载最新的 Bokeh 界面。",
+      "action.reconnectDetail": "进程已重启，正在加载最新的应用界面。",
       "action.reloadFailed": "重新载入失败：{error}",
       "action.popupBlocked":
         "浏览器拦截了编辑器窗口，请允许弹出窗口后重试。",
@@ -327,19 +330,20 @@
       "logs.refresh": "刷新",
       "logs.close": "关闭",
 
-      "new.title": "新建 Bokeh 服务器",
+      "new.title": "新建服务器",
       "new.directory": "目录名",
       "new.directoryHint":
         "可包含字母、数字、下划线或连字符。应用会创建在 <code>servers/&lt;name&gt;</code> 下。",
       "new.name": "标题",
-      "new.namePlaceholder": "我的 Bokeh 应用",
+      "new.namePlaceholder": "我的应用",
       "new.nameHint": "显示在侧栏和标签页。留空时使用目录名。",
+      "new.framework": "框架",
+      "new.frameworkHint": "选择 Bokeh 目录应用或单文件 Panel 脚本。",
       "new.template": "模板",
       "new.blank": "空白",
-      "new.blankHint": "最小 Bokeh 页面，适合作为自定义应用的起点。",
+      "new.blankHint": "最小应用，适合作为自定义应用的起点。",
       "new.interactive": "交互式",
-      "new.interactiveHint":
-        "带滑块和服务端回调的正弦波图表。",
+      "new.interactiveHint": "带滑块和服务端回调的图表。",
       "new.start": "立即启动",
       "new.creating": "正在创建…",
       "new.created": "已创建“{title}”。",
@@ -359,12 +363,13 @@
       "metadata.usageHint":
         "在此对话框中显示。纯文本，保留换行。",
       "metadata.directory": "目录：",
+      "metadata.framework": "框架：",
       "metadata.savedTo": "保存到 server.json",
       "metadata.saving": "正在保存…",
       "metadata.saved": "服务器信息已保存。",
 
       "editor.loading": "加载中…",
-      "editor.subtitle": "Bokeh 源码编辑器",
+      "editor.subtitle": "源码编辑器",
       "editor.noFile": "未打开文件",
       "editor.autoBadge": "自动",
       "editor.metaBadge": "元",
@@ -440,24 +445,24 @@
       "sidebar.aria": "サーバー管理サイドバー",
       "sidebar.collapseTitle": "サイドバーを閉じる (Ctrl+B)",
       "sidebar.expandTitle": "サイドバーを表示 (Ctrl+B)",
-      "sidebar.servers": "Bokeh サーバー",
+      "sidebar.servers": "サーバー",
       "sidebar.new": "新規",
-      "sidebar.newTitle": "新しい Bokeh サーバーを作成",
+      "sidebar.newTitle": "新しいサーバーを作成",
       "sidebar.refreshTitle": "サーバー一覧を更新",
       "sidebar.empty":
-        "Bokeh サーバーがまだありません。<br><code>servers/</code> にアプリを追加するか、ここで新規作成してください。",
+        "サーバーがまだありません。<br><code>servers/</code> にアプリを追加するか、ここで新規作成してください。",
       "sidebar.connected": "接続済み",
       "sidebar.offline": "マネージャー未接続",
       "sidebar.connectionTitle": "マネージャーの接続状態",
       "sidebar.resizeTitle": "ドラッグでサイドバーの幅を変更、ダブルクリックでリセット",
       "sidebar.shortcutTitle": "サイドバーの表示 / 非表示",
       "sidebar.language": "言語",
-      "empty.title": "Bokeh サーバーを開く",
+      "empty.title": "サーバーを開く",
       "empty.body":
         "サイドバーからサーバーを起動すると、ここにタブで UI が開きます。複数のサーバーを同時に開けます。",
       "empty.shortcut":
         "<kbd>Ctrl</kbd> + <kbd>B</kbd> でサイドバーを表示 / 非表示にできます。",
-      "tabs.aria": "開いている Bokeh サーバー",
+      "tabs.aria": "開いているサーバー",
 
       "theme.light": "ライト",
       "theme.dark": "ダーク",
@@ -481,7 +486,7 @@
       "uptime.minutes": "{n} 分",
       "uptime.hours": "{h} 時間 {m} 分",
 
-      "server.invalid": "このディレクトリは有効な Bokeh ディレクトリアプリではありません。",
+      "server.invalid": "このディレクトリは有効なアプリケーションディレクトリではありません。",
       "server.actions.start": "起動",
       "server.actions.reload": "再読み込み：プロセスを再起動し、現在のテーマを適用",
       "server.actions.stop": "停止",
@@ -493,24 +498,24 @@
       "server.actions.openTab": "サーバータブを開く",
       "server.actions.working": "処理中…",
       "server.closeTab": "{title} のタブを閉じる",
-      "server.iframeTitle": "{title} Bokeh アプリ",
+      "server.iframeTitle": "{title} アプリ",
 
       "frame.connecting": "{title} に接続中",
       "frame.connectingDetail":
-        "サーバーの準備ができると、ここに Bokeh UI が表示されます。",
+        "サーバーの準備ができると、ここにアプリケーション UI が表示されます。",
       "frame.processChanged":
-        "サーバープロセスが変更されました。Bokeh UI を再読み込みしています。",
+        "サーバープロセスが変更されました。アプリケーション UI を再読み込みしています。",
       "frame.reloading": "{title} を再読み込み中",
       "frame.reloadingDetail":
-        "Bokeh --dev がソースの変更を検出しました。UI を更新しています。",
+        "ソースの変更を検出しました。UI を更新しています。",
       "frame.unavailable": "{title} は利用できません",
       "frame.unavailableDetail":
         "サーバーログを確認し、問題を修正してから再読み込みしてください。",
       "frame.starting": "{title} を起動中",
       "frame.startingDetail":
-        "Bokeh プロセスを準備しています。UI は自動的に表示されます。",
+        "サーバープロセスを準備しています。UI は自動的に表示されます。",
       "frame.back": "{title} が復帰しました",
-      "frame.backDetail": "Bokeh UI を再読み込みしています。",
+      "frame.backDetail": "アプリケーション UI を再読み込みしています。",
 
       "action.started": "「{title}」を起動しました（ポート {port}）。",
       "action.startFailed": "起動に失敗しました：{error}",
@@ -522,7 +527,7 @@
       "action.reloaded": "「{title}」を再読み込みしました（ポート {port}）。",
       "action.reconnect": "再接続中",
       "action.reconnectDetail":
-        "プロセスが再起動しました。最新の Bokeh UI を読み込んでいます。",
+        "プロセスが再起動しました。最新のアプリケーション UI を読み込んでいます。",
       "action.reloadFailed": "再読み込みに失敗しました：{error}",
       "action.popupBlocked":
         "ブラウザがエディターウィンドウをブロックしました。ポップアップを許可して再試行してください。",
@@ -543,21 +548,23 @@
       "logs.refresh": "更新",
       "logs.close": "閉じる",
 
-      "new.title": "新しい Bokeh サーバー",
+      "new.title": "新しいサーバー",
       "new.directory": "ディレクトリ名",
       "new.directoryHint":
         "英数字、アンダースコア、ハイフンを使用できます。アプリは <code>servers/&lt;name&gt;</code> に作成されます。",
       "new.name": "タイトル",
-      "new.namePlaceholder": "マイ Bokeh アプリ",
+      "new.namePlaceholder": "マイアプリ",
       "new.nameHint":
         "サイドバーとタブに表示されます。空の場合はディレクトリ名を使用します。",
+      "new.framework": "フレームワーク",
+      "new.frameworkHint": "Bokeh ディレクトリアプリまたは単一ファイルの Panel スクリプトを選択します。",
       "new.template": "テンプレート",
       "new.blank": "空白",
       "new.blankHint":
-        "最小限の Bokeh ページです。カスタムアプリの出発点に適しています。",
+        "最小限のアプリです。カスタムアプリの出発点に適しています。",
       "new.interactive": "インタラクティブ",
       "new.interactiveHint":
-        "スライダーとサーバー側コールバックを備えた正弦波プロットです。",
+        "スライダーとサーバー側コールバックを備えたプロットです。",
       "new.start": "すぐに起動",
       "new.creating": "作成中…",
       "new.created": "「{title}」を作成しました。",
@@ -578,12 +585,13 @@
       "metadata.usageHint":
         "このダイアログに表示されます。プレーンテキストで、改行は保持されます。",
       "metadata.directory": "ディレクトリ：",
+      "metadata.framework": "フレームワーク：",
       "metadata.savedTo": "server.json に保存",
       "metadata.saving": "保存中…",
       "metadata.saved": "サーバー情報を保存しました。",
 
       "editor.loading": "読み込み中…",
-      "editor.subtitle": "Bokeh ソースエディター",
+      "editor.subtitle": "ソースエディター",
       "editor.noFile": "ファイルが開かれていません",
       "editor.autoBadge": "自動",
       "editor.metaBadge": "メタ",
