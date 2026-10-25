@@ -168,6 +168,7 @@
       "editor.selectFile": "Select a file",
       "editor.selectFileHint":
         "Choose a file from the tree to start editing.",
+      "editor.cursorInitial": "Ln 1, Col 1",
       "editor.lncol": "Ln {line}, Col {col}",
       "editor.selected": "{count} selected",
       "editor.plainText": "Plain text",
@@ -357,6 +358,7 @@
       "editor.loadingFiles": "正在加载文件…",
       "editor.selectFile": "选择一个文件",
       "editor.selectFileHint": "从左侧文件树选择文件开始编辑。",
+      "editor.cursorInitial": "行 1，列 1",
       "editor.lncol": "行 {line}，列 {col}",
       "editor.selected": "已选择 {count} 个字符",
       "editor.plainText": "纯文本",
@@ -557,6 +559,7 @@
       "editor.selectFile": "ファイルを選択",
       "editor.selectFileHint":
         "ファイルツリーからファイルを選択して編集を開始してください。",
+      "editor.cursorInitial": "1 行、1 列",
       "editor.lncol": "{line} 行、{col} 列",
       "editor.selected": "{count} 文字選択中",
       "editor.plainText": "プレーンテキスト",

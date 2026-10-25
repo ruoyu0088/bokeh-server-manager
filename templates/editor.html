@@ -17,34 +17,34 @@
       <div class="editor-server">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
         <div class="editor-server-text">
-          <strong id="server-title">Loading…</strong>
-          <span id="server-name">Bokeh source editor</span>
+          <strong id="server-title" data-i18n="editor.loading">Loading…</strong>
+          <span id="server-name" data-i18n="editor.subtitle">Bokeh source editor</span>
         </div>
       </div>
       <div class="editor-file-heading">
-        <span id="file-path">No file open</span>
-        <span class="badge" id="managed-badge" hidden>auto</span>
-        <span class="badge badge-meta" id="metadata-badge" hidden>meta</span>
-        <span class="dirty-dot" id="dirty-dot" hidden title="Unsaved changes"></span>
+        <span id="file-path" data-i18n="editor.noFile">No file open</span>
+        <span class="badge" id="managed-badge" data-i18n="editor.autoBadge" hidden>auto</span>
+        <span class="badge badge-meta" id="metadata-badge" data-i18n="editor.metaBadge" hidden>meta</span>
+        <span class="dirty-dot" id="dirty-dot" data-i18n-title="editor.unsavedTitle" hidden title="Unsaved changes"></span>
       </div>
       <div class="editor-actions">
-        <span class="save-state" id="save-state">Ready</span>
-        <button class="icon-button icon-button-small" id="refresh-tree" type="button" title="Refresh file tree" aria-label="Refresh file tree">
+        <span class="save-state" id="save-state" data-i18n="editor.ready">Ready</span>
+        <button class="icon-button icon-button-small" id="refresh-tree" type="button" title="Refresh file tree" aria-label="Refresh file tree" data-i18n-title="editor.refreshTree" data-i18n-aria-label="editor.refreshTree">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
         </button>
-        <button class="button button-primary button-compact" id="save-file" type="button" disabled>Save</button>
+        <button class="button button-primary button-compact" id="save-file" type="button" data-i18n="editor.save" disabled>Save</button>
       </div>
     </header>
 
     <div class="editor-body">
-      <aside class="editor-sidebar" aria-label="Files">
+      <aside class="editor-sidebar" aria-label="Files" data-i18n-aria-label="editor.files">
         <div class="editor-sidebar-head">
-          <span>Files</span>
+          <span data-i18n="editor.files">Files</span>
           <span class="file-count" id="file-count"></span>
         </div>
         <div class="file-tree" id="file-tree"></div>
         <div class="editor-sidebar-foot">
-          <span id="tree-status">Loading files…</span>
+          <span id="tree-status" data-i18n="editor.loadingFiles">Loading files…</span>
         </div>
       </aside>
 
@@ -52,18 +52,18 @@
         <div class="editor-host-wrap">
           <div class="editor-host" id="editor-host"></div>
           <div class="editor-empty" id="editor-empty">
-            <strong>Select a file</strong>
-            <span>Choose a file from the tree to start editing.</span>
+            <strong data-i18n="editor.selectFile">Select a file</strong>
+            <span data-i18n="editor.selectFileHint">Choose a file from the tree to start editing.</span>
           </div>
           <div class="editor-error" id="editor-error" hidden></div>
         </div>
         <div class="editor-statusbar">
-          <span id="cursor-pos">Ln 1, Col 1</span>
+          <span id="cursor-pos" data-i18n="editor.cursorInitial">Ln 1, Col 1</span>
           <span id="selection-info"></span>
           <span class="statusbar-spacer"></span>
-          <span id="file-mode">Plain text</span>
-          <span>UTF-8</span>
-          <span>Ctrl+S to save</span>
+          <span id="file-mode" data-i18n="editor.plainText">Plain text</span>
+          <span data-i18n="editor.utf8">UTF-8</span>
+          <span data-i18n="editor.ctrlSave">Ctrl+S to save</span>
         </div>
       </main>
     </div>
@@ -71,6 +71,7 @@
 
   <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="false"></div>
 
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='vendor/codemirror/lib/codemirror.js') }}"></script>
   <script src="{{ url_for('static', filename='vendor/codemirror/mode/xml/xml.js') }}"></script>
   <script src="{{ url_for('static', filename='vendor/codemirror/mode/javascript/javascript.js') }}"></script>
