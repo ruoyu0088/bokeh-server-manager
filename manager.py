@@ -134,10 +134,10 @@ def ensure_directories() -> None:
 def validate_server_name(name: str) -> str:
     if not isinstance(name, str) or not SERVER_NAME_RE.fullmatch(name):
         raise ManagerError(
-            "服务器名称只能包含字母、数字、下划线或连字符，且必须以字母或数字开头。"
+            "Server names may contain only letters, numbers, underscores, or hyphens, and must start with a letter or number."
         )
     if name.lower() in RESERVED_NAMES:
-        raise ManagerError(f"“{name}”是保留名称，请换一个。")
+        raise ManagerError(f'"{name}" is a reserved name. Choose another one.')
     return name
 
 
@@ -150,11 +150,11 @@ def server_path(name: str) -> Path:
         or "\\" in name
         or "\x00" in name
     ):
-        raise ManagerError("无效的服务器名称。", 400)
+        raise ManagerError("Invalid server name.", 400)
     base = SERVERS_DIR.resolve()
     candidate = (base / name).resolve()
     if candidate.parent != base:
-        raise ManagerError("服务器目录不在 servers 目录内。", 400)
+        raise ManagerError("The server directory is outside the servers directory.", 400)
     return candidate
 
 
@@ -185,10 +185,10 @@ def _count_files(root: Path) -> int:
 def get_server(name: str) -> ServerInfo:
     path = server_path(name)
     if not path.is_dir():
-        raise ManagerError(f"服务器“{name}”不存在。", 404)
+        raise ManagerError(f'Server "{name}" does not exist.', 404)
     entry = path / SERVER_FILE
     valid = entry.is_file()
-    error = None if valid else "缺少 Bokeh 目录应用入口 main.py。"
+    error = None if valid else "Missing main.py, the entry point for a Bokeh directory application."
     return ServerInfo(
         name=name,
         path=path,
@@ -210,7 +210,7 @@ def list_servers() -> list[ServerInfo]:
                 path=path,
                 entry=entry if valid else None,
                 valid=valid,
-                error=None if valid else "缺少 Bokeh 目录应用入口 main.py。",
+                error=None if valid else "Missing main.py, the entry point for a Bokeh directory application.",
                 file_count=_count_files(path),
             )
         )
@@ -219,15 +219,15 @@ def list_servers() -> list[ServerInfo]:
 
 def _safe_relative_path(server: ServerInfo, relative: str) -> Path:
     if not isinstance(relative, str):
-        raise ManagerError("文件路径无效。", 400)
+        raise ManagerError("Invalid file path.", 400)
     if "\x00" in relative:
-        raise ManagerError("文件路径无效。", 400)
+        raise ManagerError("Invalid file path.", 400)
     relative = relative.replace("\\", "/").strip("/")
     if not relative or relative in {".", ".."}:
-        raise ManagerError("文件路径无效。", 400)
+        raise ManagerError("Invalid file path.", 400)
     target = (server.path / relative).resolve()
     if target != server.path and server.path not in target.parents:
-        raise ManagerError("文件路径越界。", 403)
+        raise ManagerError("File path escapes the server directory.", 403)
     return target
 
 
@@ -243,7 +243,7 @@ def build_file_tree(name: str) -> dict[str, Any]:
                 key=lambda p: (not p.is_dir(), p.name.lower()),
             )
         except OSError as exc:
-            raise ManagerError(f"无法读取目录：{exc}") from exc
+            raise ManagerError(f"Could not read directory: {exc}") from exc
 
         for child in children:
             if child.name in SKIP_NAMES or child.name.startswith("."):
@@ -289,16 +289,16 @@ def read_text_file(name: str, relative: str) -> dict[str, Any]:
     server = get_server(name)
     path = _safe_relative_path(server, relative)
     if not path.is_file():
-        raise ManagerError("文件不存在。", 404)
+        raise ManagerError("File not found.", 404)
     stat = path.stat()
     if stat.st_size > MAX_EDIT_BYTES:
-        raise ManagerError("文件过大，编辑器最多支持 2 MB。", 413)
+        raise ManagerError("File is too large. The editor supports files up to 2 MB.", 413)
     try:
         raw = path.read_bytes()
     except OSError as exc:
-        raise ManagerError(f"无法读取文件：{exc}") from exc
+        raise ManagerError(f"Could not read file: {exc}") from exc
     if b"\x00" in raw:
-        raise ManagerError("这是二进制文件，无法用文本编辑器打开。", 415)
+        raise ManagerError("This is a binary file and cannot be opened in the text editor.", 415)
     try:
         content = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -316,12 +316,12 @@ def write_text_file(name: str, relative: str, content: str) -> dict[str, Any]:
     server = get_server(name)
     path = _safe_relative_path(server, relative)
     if not isinstance(content, str):
-        raise ManagerError("文件内容必须是文本。", 400)
+        raise ManagerError("File contents must be text.", 400)
     encoded = content.encode("utf-8")
     if len(encoded) > MAX_EDIT_BYTES:
-        raise ManagerError("文件过大，编辑器最多支持 2 MB。", 413)
+        raise ManagerError("File is too large. The editor supports files up to 2 MB.", 413)
     if path.exists() and not path.is_file():
-        raise ManagerError("目标不是普通文件。", 400)
+        raise ManagerError("The target is not a regular file.", 400)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         temp_path = path.with_name(f".{path.name}.tmp-{os.getpid()}")
@@ -331,7 +331,7 @@ def write_text_file(name: str, relative: str, content: str) -> dict[str, Any]:
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
     except OSError as exc:
-        raise ManagerError(f"无法保存文件：{exc}") from exc
+        raise ManagerError(f"Could not save file: {exc}") from exc
     stat = path.stat()
     return {
         "path": path.relative_to(server.path).as_posix(),
@@ -459,7 +459,7 @@ def _stop_runtime_locked(runtime: Runtime) -> None:
 
 def _validate_theme(theme: str) -> str:
     if theme not in {"light", "dark"}:
-        raise ManagerError("主题只能是 light 或 dark。", 400)
+        raise ManagerError("Theme must be either light or dark.", 400)
     return theme
 
 
@@ -469,7 +469,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
     with _runtime_lock:
         server = get_server(name)
         if not server.valid:
-            raise ManagerError(server.error or "服务器不可用。", 400)
+            raise ManagerError(server.error or "Server is not available.", 400)
 
         existing = _runtimes.get(name)
         if existing is not None:
@@ -481,7 +481,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         try:
             copy_theme(theme, server.path / THEME_FILE)
         except OSError as exc:
-            raise ManagerError(f"无法写入主题文件：{exc}", 500) from exc
+            raise ManagerError(f"Could not write theme.yaml: {exc}", 500) from exc
         port = _allocate_port()
         log_path = LOGS_DIR / _log_filename(name)
         log_handle = log_path.open("a", encoding="utf-8", buffering=1)
@@ -539,7 +539,7 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         except OSError as exc:
             _stop_runtime_locked(runtime)
             runtime.status = "error"
-            runtime.error = f"无法启动 Bokeh 进程：{exc}"
+            runtime.error = f"Could not start the Bokeh process: {exc}"
             raise ManagerError(runtime.error, 500) from exc
 
         deadline = time.monotonic() + START_TIMEOUT
@@ -566,9 +566,9 @@ def start_server(name: str, theme: str = "light") -> dict[str, Any]:
         _stop_runtime_locked(runtime)
         runtime.status = "error"
         if exit_code is not None:
-            runtime.error = f"Bokeh 服务进程启动失败（退出码 {exit_code}）。"
+            runtime.error = f"Bokeh process failed to start (exit code {exit_code})."
         else:
-            runtime.error = "Bokeh 服务启动超时。"
+            runtime.error = "Bokeh server startup timed out."
         message = runtime.error
         if log_tail.strip():
             message = f"{message}\n\n{log_tail[-4000:]}"
@@ -626,7 +626,7 @@ def _refresh_runtime_locked(runtime: Runtime) -> None:
             return
     runtime.status = "error"
     if not runtime.error:
-        runtime.error = "Bokeh 服务进程已退出，请查看日志。"
+        runtime.error = "The Bokeh process exited. Check the logs."
 
 
 def list_server_states() -> list[dict[str, Any]]:
@@ -658,7 +658,7 @@ def server_state(name: str) -> dict[str, Any]:
     for state in list_server_states():
         if state["name"] == name:
             return state
-    raise ManagerError(f"服务器“{name}”不存在。", 404)
+    raise ManagerError(f'Server "{name}" does not exist.', 404)
 
 
 def logs_for_server(name: str, lines: int = 300) -> str:
@@ -682,13 +682,9 @@ atexit.register(stop_all)
 def copy_theme(theme: str, destination: Path) -> None:
     """Copy a prepared Bokeh theme YAML into an application directory."""
     if theme not in {"light", "dark"}:
-        raise ManagerError("未知的主题。", 400)
+        raise ManagerError("Unknown theme.", 400)
     source = THEMES_DIR / f"{theme}.yaml"
     if not source.is_file():
-        raise ManagerError(f"缺少主题文件 {source.name}。", 500)
+        raise ManagerError(f"Missing theme file: {source.name}", 500)
     shutil.copyfile(source, destination)
 
-
-def delete_application(name: str) -> None:
-    """Reserved for a later release; currently disabled intentionally."""
-    raise ManagerError("暂不支持删除服务器目录，请在文件系统中手动删除。", 400)
