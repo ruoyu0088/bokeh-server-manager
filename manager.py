@@ -816,7 +816,13 @@ def reload_server(name: str, theme: str = "light") -> dict[str, Any]:
         runtime = _runtimes.get(name)
         if runtime is not None:
             _stop_runtime_locked(runtime)
-    return start_server(name, theme)
+            # Keep the UI tab in a "starting" state while the replacement
+            # process comes up instead of exposing a brief "stopped" state.
+            runtime.status = "starting"
+            runtime.error = None
+        # start_server() uses the same re-entrant lock, so status polls cannot
+        # observe the short stopped/starting gap during a reload.
+        return start_server(name, theme)
 
 
 def _refresh_runtime_locked(runtime: Runtime) -> None:
