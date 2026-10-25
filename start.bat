@@ -2,8 +2,8 @@
 setlocal
 title Bokeh Server Manager
 set "MKL_THREADING_LAYER=TBB"
-set "BSM_OPEN_BROWSER=1"
-set "BSM_PORT=8010"
+if not defined BSM_OPEN_BROWSER set "BSM_OPEN_BROWSER=1"
+if not defined BSM_PORT set "BSM_PORT=8010"
 set "PYTHON=C:\pixi_env\.pixi\envs\default\python.exe"
 
 cd /d "%~dp0"
