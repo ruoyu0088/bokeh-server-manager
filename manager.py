@@ -32,6 +32,13 @@ from typing import Any, Iterable, TextIO
 
 import psutil
 
+# Local loopback health checks must not inherit HTTP_PROXY / HTTPS_PROXY.
+# Otherwise a system proxy can intercept the readiness request and make a
+# successfully started Bokeh/Panel server look unavailable.
+_no_proxy_opener = urllib.request.build_opener(
+    urllib.request.ProxyHandler({})
+)
+
 ROOT = Path(__file__).resolve().parent
 SERVERS_DIR = ROOT / "servers"
 RUNTIME_DIR = ROOT / ".runtime"
@@ -737,7 +744,7 @@ def _listener_pid(port: int) -> int | None:
 def _http_ready(port: int, route: str) -> bool:
     url = f"http://127.0.0.1:{port}{route}"
     try:
-        with urllib.request.urlopen(url, timeout=1.0) as response:
+        with _no_proxy_opener.open(url, timeout=1.0) as response:
             return 200 <= response.status < 400
     except Exception:
         return False
