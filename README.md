@@ -16,6 +16,7 @@ Each application runs in its own Bokeh or Panel process. The manager assigns a f
 - Collapsible, resizable sidebar. Toggle it with `Ctrl+B` (or `Cmd+B`).
 - One process per Bokeh or Panel server, with an automatically assigned port.
 - Multiple running servers displayed as tabs; each tab is an iframe.
+- Hide the tab bar for a full-height app, switch tabs from a floating menu, and toggle the mode with `Ctrl+M`.
 - Start, reload, stop, edit source, edit metadata, view logs, and open a server in a new window.
 - Create a new Bokeh or Panel server from a blank or interactive template.
 - Light / dark themes for the manager, the editor, and Bokeh/Panel pages.
@@ -266,6 +267,19 @@ Example Markdown in `server.json`:
 - For Panel, the theme is passed in the iframe URL as `?theme=default` or `?theme=dark`; standard Panel templates apply it.
 - To apply a new theme to a running server, click **Reload**.
 - The server card shows the theme that the running process is using.
+
+## Hidden tab mode
+
+The button at the far right of the tab bar hides the tab bar and gives the active app the full height of the main area.
+
+- A small translucent tab button remains at the top-right corner of the app. Click it to open a menu of all open tabs.
+- Select a tab to switch without leaving the mode.
+- **Show tab bar** exits the mode.
+- `Ctrl+M` (or `Cmd+M`) toggles hidden / visible.
+- The mode is remembered in `localStorage`.
+- The button and menu are overlaid by the manager page, not by the app iframe, so switching tabs does not reload the apps.
+- Because the iframe fills the area, the floating button necessarily overlays a very small top-right corner. The menu is only shown temporarily.
+- `Ctrl+M` is handled by the manager page. If keyboard focus is inside the Bokeh/Panel iframe, the key goes to the app instead; click the manager UI or the floating button first.
 
 ## Live reload
 
