@@ -22,7 +22,8 @@ Each application runs in its own Bokeh or Panel process. The manager assigns a f
 - Source editor with a file tree, syntax highlighting, file creation/deletion, and `Ctrl+S` saving.
 - Bokeh and Panel `--dev` live reloading. The manager refreshes the iframe when the Bokeh process restarts; Panel reloads in place.
 - CSRF-protected writes, login rate limiting, and session invalidation after a password reset.
-- Per-server metadata: title, description, and usage notes.
+- Project information window with sanitized Markdown documentation in a separate browser window.
+- Per-server metadata: title, description, and Markdown usage notes.
 - Three ready-to-run examples, including a Panel app.
 
 ## Languages
@@ -46,6 +47,8 @@ Use the language selector in the sidebar footer to switch the interface between 
   - `psutil>=7,<8`
   - `PyYAML>=6,<7`
   - `watchfiles>=1.3,<2` for reliable Panel `--dev` reloading
+  - `Markdown>=3.7,<4` for project documentation
+  - `bleach>=6,<7` to sanitize rendered Markdown
 
 The Bokeh and Panel processes need `MKL_THREADING_LAYER=TBB` with this environment. `start.bat` sets it automatically.
 
@@ -228,12 +231,32 @@ Each server can have a `server.json` file:
 
 - `title` is used in the sidebar and tab titles. It falls back to the directory name.
 - `description` is shown under the server title.
-- `usage` is shown in the **Server information** dialog.
+- `usage` is the project documentation. It is written in Markdown and rendered in the **Project information** window.
 - `framework` is `"bokeh"` or `"panel"`. If omitted, it defaults to `"bokeh"`.
 - Metadata is not translated; it is displayed exactly as entered.
 - Unknown JSON keys are preserved.
-- Use the info button on a server card to edit title, description, and usage without touching JSON. The framework is shown read-only there and is selected when the server is created.
+- Use the server-information button on a server card to edit title, description, and documentation without touching JSON. The framework is shown read-only there and is selected when the server is created.
 - A malformed `server.json` is reported in the UI but does not prevent the server from starting.
+
+## Project information window
+
+Click the book icon on a server card to open project information in a separate browser window. This keeps the documentation visible while you continue using the Bokeh/Panel app.
+
+- The **Documentation** section is rendered from the `usage` field as Markdown.
+- Headings, lists, tables, code blocks, links, and blockquotes are supported.
+- Rendered HTML is sanitized with an allowlist, so scripts and event handlers in documentation are removed.
+- The page follows the manager's light/dark theme and UI language. The Markdown content itself is not translated.
+- The window can be closed with the close button in its header.
+- The page is protected by the same web login as the manager; guests can read it.
+- The page URL is `/info?server=<name>`.
+
+Example Markdown in `server.json`:
+
+```json
+{
+  "usage": "## Controls\n\n- **Frequency**: changes the wave speed.\n- **Amplitude**: changes the wave height.\n\n> Tip: use Reload after changing the theme."
+}
+```
 
 ## Theme behavior
 
