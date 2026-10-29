@@ -57,9 +57,10 @@
       "server.actions.stop": "Stop",
       "server.actions.viewSource": "View source",
       "server.actions.edit": "Edit source",
-      "server.actions.metadata": "Server information",
+      "server.actions.info": "Project information",
+      "server.actions.metadata": "Edit server information",
       "server.actions.metadataError":
-        "Server information (server.json has an error)",
+        "Edit server information (server.json has an error)",
       "server.actions.logs": "View logs",
       "server.actions.external": "Open in a new window",
       "server.actions.openTab": "Open server tab",
@@ -138,7 +139,7 @@
       "new.invalidName":
         "Use letters, numbers, underscores, or hyphens. The name must start with a letter or number.",
 
-      "metadata.title": "Server information · {title}",
+      "metadata.title": "Edit server information · {title}",
       "metadata.warningTitle": "server.json needs attention.",
       "metadata.warningBody":
         "{error} Saving this form will replace it with valid metadata.",
@@ -148,9 +149,17 @@
       "metadata.description": "Description",
       "metadata.descriptionHint":
         "A short summary shown under the server title.",
-      "metadata.usage": "Usage",
+      "metadata.usage": "Documentation",
       "metadata.usageHint":
-        "Shown in this dialog. Plain text; line breaks are preserved.",
+        "Markdown is supported and rendered in the project information window.",
+      "info.title": "Project information",
+      "info.docs": "Documentation",
+      "info.noDocs": "No documentation has been written for this project yet.",
+      "info.framework": "Framework",
+      "info.directory": "Directory",
+      "info.source": "Rendered from the Markdown in the server.json usage field.",
+      "info.warning": "server.json needs attention.",
+      "info.close": "Close window",
       "metadata.directory": "Directory:",
       "metadata.framework": "Framework:",
       "metadata.savedTo": "Saved to server.json",
@@ -311,8 +320,9 @@
       "server.actions.stop": "停止",
       "server.actions.viewSource": "查看源码",
       "server.actions.edit": "编辑源程序",
-      "server.actions.metadata": "服务器信息",
-      "server.actions.metadataError": "服务器信息（server.json 有错误）",
+      "server.actions.info": "项目信息",
+      "server.actions.metadata": "编辑服务器信息",
+      "server.actions.metadataError": "编辑服务器信息（server.json 有错误）",
       "server.actions.logs": "查看日志",
       "server.actions.external": "在新窗口打开",
       "server.actions.openTab": "打开服务标签页",
@@ -381,7 +391,7 @@
       "new.invalidName":
         "只能使用字母、数字、下划线或连字符，并且必须以字母或数字开头。",
 
-      "metadata.title": "服务器信息 · {title}",
+      "metadata.title": "编辑服务器信息 · {title}",
       "metadata.warningTitle": "server.json 需要处理。",
       "metadata.warningBody":
         "{error} 保存表单会用有效的元信息替换它。",
@@ -390,9 +400,17 @@
         "用于侧栏和标签页。留空时使用目录名。",
       "metadata.description": "简介",
       "metadata.descriptionHint": "显示在服务器标题下方的一行简介。",
-      "metadata.usage": "使用说明",
+      "metadata.usage": "项目文档",
       "metadata.usageHint":
-        "在此对话框中显示。纯文本，保留换行。",
+        "支持 Markdown，会在项目信息窗口中渲染。",
+      "info.title": "项目信息",
+      "info.docs": "项目文档",
+      "info.noDocs": "还没有为这个项目编写文档。",
+      "info.framework": "框架",
+      "info.directory": "目录",
+      "info.source": "内容来自 server.json 的 Markdown 使用说明。",
+      "info.warning": "server.json 需要处理。",
+      "info.close": "关闭窗口",
       "metadata.directory": "目录：",
       "metadata.framework": "框架：",
       "metadata.savedTo": "保存到 server.json",
@@ -549,8 +567,9 @@
       "server.actions.stop": "停止",
       "server.actions.viewSource": "ソースを表示",
       "server.actions.edit": "ソースを編集",
-      "server.actions.metadata": "サーバー情報",
-      "server.actions.metadataError": "サーバー情報（server.json にエラーがあります）",
+      "server.actions.info": "プロジェクト情報",
+      "server.actions.metadata": "サーバー情報を編集",
+      "server.actions.metadataError": "サーバー情報を編集（server.json にエラーがあります）",
       "server.actions.logs": "ログを表示",
       "server.actions.external": "新しいウィンドウで開く",
       "server.actions.openTab": "サーバータブを開く",
@@ -629,7 +648,7 @@
       "new.invalidName":
         "英数字、アンダースコア、ハイフンを使用し、英数字で始めてください。",
 
-      "metadata.title": "サーバー情報 · {title}",
+      "metadata.title": "サーバー情報を編集 · {title}",
       "metadata.warningTitle": "server.json の確認が必要です。",
       "metadata.warningBody":
         "{error} このフォームを保存すると有効なメタデータで置き換えます。",
@@ -639,9 +658,17 @@
       "metadata.description": "説明",
       "metadata.descriptionHint":
         "サーバータイトルの下に表示される短い説明です。",
-      "metadata.usage": "使い方",
+      "metadata.usage": "ドキュメント",
       "metadata.usageHint":
-        "このダイアログに表示されます。プレーンテキストで、改行は保持されます。",
+        "Markdown に対応し、プロジェクト情報ウィンドウでレンダリングされます。",
+      "info.title": "プロジェクト情報",
+      "info.docs": "ドキュメント",
+      "info.noDocs": "このプロジェクトのドキュメントはまだありません。",
+      "info.framework": "フレームワーク",
+      "info.directory": "ディレクトリ",
+      "info.source": "server.json の Markdown 記述からレンダリングしています。",
+      "info.warning": "server.json の確認が必要です。",
+      "info.close": "ウィンドウを閉じる",
       "metadata.directory": "ディレクトリ：",
       "metadata.framework": "フレームワーク：",
       "metadata.savedTo": "server.json に保存",

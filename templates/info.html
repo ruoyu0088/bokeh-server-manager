@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{{ app_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/info.css') }}">
+</head>
+<body class="info-page" data-project-title="{{ (server.title or server.name) if server else '' }}">
+  <div class="info-shell">
+    <header class="info-header">
+      <div class="info-brand">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-title">Bokeh Server Manager</span>
+      </div>
+      <button class="icon-button icon-button-small" id="info-close" type="button" title="Close window" aria-label="Close window" data-i18n-title="info.close" data-i18n-aria-label="info.close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+
+    <main class="info-card">
+      {% if error %}
+      <div class="info-error">
+        <div class="info-eyebrow" data-i18n="info.title">Project information</div>
+        <h1>{{ error }}</h1>
+      </div>
+      {% else %}
+      <div class="info-eyebrow" data-i18n="info.title">Project information</div>
+      <h1 class="info-title">{{ server.title or server.name }}</h1>
+      {% if server.description %}
+      <p class="info-description">{{ server.description }}</p>
+      {% endif %}
+
+      <div class="info-meta">
+        <span class="info-chip">
+          <span data-i18n="info.framework">Framework</span>
+          <strong>{{ server.framework|capitalize }}</strong>
+        </span>
+        <span class="info-chip">
+          <span data-i18n="info.directory">Directory</span>
+          <code>{{ server.name }}</code>
+        </span>
+      </div>
+
+      {% if server.metadata_error or not server.valid %}
+      <div class="info-warning">
+        <strong data-i18n="info.warning">server.json needs attention.</strong>
+        <span>{{ server.metadata_error or server.error }}</span>
+      </div>
+      {% endif %}
+
+      <section class="info-docs" aria-labelledby="info-docs-title">
+        <h2 id="info-docs-title" data-i18n="info.docs">Documentation</h2>
+        {% if docs_html %}
+        <div class="markdown-body">
+          {{ docs_html|safe }}
+        </div>
+        <p class="info-source" data-i18n="info.source">Rendered from the Markdown in the server.json usage field.</p>
+        {% else %}
+        <p class="info-empty" data-i18n="info.noDocs">No documentation has been written for this project yet.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/info.js') }}"></script>
+</body>
+</html>

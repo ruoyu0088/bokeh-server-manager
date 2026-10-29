@@ -29,6 +29,7 @@ from flask import (
 import manager
 import web_auth
 from i18n_backend import normalize_language, translate_error
+from markdown_render import render_markdown
 
 APP_TITLE = "Bokeh Server Manager"
 DEFAULT_PORT = 8010
@@ -430,6 +431,42 @@ def editor() -> str:
         role=getattr(g, "role", "editor"),
         csrf=get_csrf_token() if is_web_mode() else "",
         web_mode=is_web_mode(),
+    )
+
+
+@app.get("/info")
+def project_info():
+    name = request.args.get("server", "").strip()
+    if not name:
+        return (
+            render_template(
+                "info.html",
+                app_title=f"{APP_TITLE} · Project information",
+                server=None,
+                docs_html="",
+                error="Project information is unavailable.",
+            ),
+            404,
+        )
+    try:
+        server = manager.get_server(name)
+    except manager.ManagerError as exc:
+        return (
+            render_template(
+                "info.html",
+                app_title=f"{APP_TITLE} · Project information",
+                server=None,
+                docs_html="",
+                error=translate_error(exc.message, request_language()),
+            ),
+            404,
+        )
+    return render_template(
+        "info.html",
+        app_title=f"{server.title or server.name} · Project information",
+        server=server,
+        docs_html=render_markdown(server.usage),
+        error=None,
     )
 
 

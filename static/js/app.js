@@ -20,6 +20,7 @@
     edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20ZM13.5 7.5l3 3"/></svg>',
     logs: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 12h9M5 19h11"/></svg>',
     info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></svg>',
     external: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"/></svg>',
     close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
     sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -384,6 +385,7 @@
       const metadataTitle = server.metadata_error
         ? t("server.actions.metadataError")
         : t("server.actions.metadata");
+      const infoTitle = t("server.actions.info");
 
       card.innerHTML = `
         <div class="server-card-main" data-action="open" title="${escapeHtml(
@@ -422,6 +424,11 @@
           )}" aria-label="${escapeHtml(
             `${editLabel}: ${title}`,
           )}" ${busy ? "disabled" : ""}>${ICONS.edit}</button>
+          <button class="icon-button" type="button" data-action="info" title="${escapeHtml(
+            infoTitle,
+          )}" aria-label="${escapeHtml(
+            `${infoTitle}: ${title}`,
+          )}">${ICONS.book}</button>
           <button class="icon-button${server.metadata_error ? " warn" : ""}" type="button" data-action="metadata" title="${escapeHtml(
             metadataTitle,
           )}" aria-label="${escapeHtml(
@@ -850,6 +857,18 @@
     }
   }
 
+  function openProjectInfo(name) {
+    const url = `/info?server=${encodeURIComponent(name)}`;
+    const info = window.open(
+      url,
+      `bsm-info-${name}`,
+      "popup=yes,width=900,height=820,resizable=yes,scrollbars=yes",
+    );
+    if (!info) {
+      toast(t("action.popupBlocked"), "error", 7000);
+    }
+  }
+
   function openExternalFor(name) {
     const entry = state.tabs.get(name);
     const server = serverByName(name);
@@ -1274,6 +1293,7 @@
     if (action === "stop") stopServer(name);
     if (action === "reload") reloadServer(name);
     if (action === "edit") editServer(name);
+    if (action === "info") openProjectInfo(name);
     if (action === "metadata") showServerInfo(name);
     if (action === "logs") showLogs(name);
     if (action === "external") openExternalFor(name);
