@@ -88,6 +88,9 @@
       <div class="tabbar" id="tabbar">
         <div class="tabs" id="tabs" role="tablist" aria-label="Open Bokeh servers" data-i18n-aria-label="tabs.aria"></div>
         <div class="tabbar-spacer" aria-hidden="true"></div>
+        <button class="icon-button icon-button-small tabbar-hide" id="hide-tabs" type="button" title="Hide tabs" aria-label="Hide tabs" data-i18n-title="tabs.hide" data-i18n-aria-label="tabs.hide" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6-4 6 4M6 15l6-4 6 4"/></svg>
+        </button>
       </div>
       <div class="workspace" id="workspace">
         <div class="empty-state" id="empty-state">
@@ -103,6 +106,21 @@
           </div>
         </div>
         <div class="panes" id="panes"></div>
+      </div>
+
+      <div class="tab-overlay" id="tab-overlay" hidden>
+        <div class="tab-menu-backdrop" id="tab-menu-backdrop" hidden></div>
+        <button class="tab-overlay-button" id="tab-overlay-button" type="button" title="Switch tab" aria-label="Switch tab" aria-haspopup="menu" aria-expanded="false" aria-controls="tab-menu" data-i18n-title="tabs.menuTitle" data-i18n-aria-label="tabs.menuTitle">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>
+        </button>
+        <div class="tab-menu" id="tab-menu" role="menu" aria-labelledby="tab-menu-label" hidden>
+          <div class="tab-menu-header">
+            <span id="tab-menu-label" data-i18n="tabs.menuLabel">Tabs</span>
+            <span id="tab-menu-count"></span>
+          </div>
+          <div class="tab-menu-list" id="tab-menu-list" role="none"></div>
+          <button class="tab-menu-exit" id="exit-tabs" type="button" role="menuitem" data-i18n="tabs.exitHidden">Show tab bar</button>
+        </div>
       </div>
     </main>
   </div>

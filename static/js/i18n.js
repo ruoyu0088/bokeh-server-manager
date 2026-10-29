@@ -27,6 +27,11 @@
       "empty.shortcut":
         "Press <kbd>Ctrl</kbd> + <kbd>B</kbd> to show or hide the sidebar.",
       "tabs.aria": "Open servers",
+      "tabs.hide": "Hide tabs",
+      "tabs.menuTitle": "Switch tab",
+      "tabs.menuLabel": "Tabs",
+      "tabs.exitHidden": "Show tab bar",
+      "tabs.noTabs": "No open tabs",
 
       "theme.light": "Light",
       "theme.dark": "Dark",
@@ -291,6 +296,11 @@
       "empty.shortcut":
         "按 <kbd>Ctrl</kbd> + <kbd>B</kbd> 显示或隐藏左侧栏。",
       "tabs.aria": "已打开的服务",
+      "tabs.hide": "隐藏标签页",
+      "tabs.menuTitle": "切换标签页",
+      "tabs.menuLabel": "标签页",
+      "tabs.exitHidden": "退出隐藏模式",
+      "tabs.noTabs": "没有打开的标签页",
 
       "theme.light": "亮色",
       "theme.dark": "暗色",
@@ -538,6 +548,11 @@
       "empty.shortcut":
         "<kbd>Ctrl</kbd> + <kbd>B</kbd> でサイドバーを表示 / 非表示にできます。",
       "tabs.aria": "開いているサーバー",
+      "tabs.hide": "タブを隠す",
+      "tabs.menuTitle": "タブを切り替え",
+      "tabs.menuLabel": "タブ",
+      "tabs.exitHidden": "タブバーを表示",
+      "tabs.noTabs": "開いているタブはありません",
 
       "theme.light": "ライト",
       "theme.dark": "ダーク",

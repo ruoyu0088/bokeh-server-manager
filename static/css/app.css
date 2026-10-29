@@ -801,12 +801,17 @@ body[data-role="viewer"] #new-server-btn {
 }
 
 .main {
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
   height: 100vh;
   flex-direction: column;
   background: var(--bg);
+}
+
+.main.tabs-hidden .tabbar {
+  display: none;
 }
 
 .tabbar {
@@ -830,6 +835,193 @@ body[data-role="viewer"] #new-server-btn {
 
 .tabbar-spacer {
   flex: 0 0 0;
+}
+
+.tabbar-hide {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--muted);
+}
+
+.tabbar-hide:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text-strong);
+}
+
+.tabbar-hide svg {
+  width: 15px;
+  height: 15px;
+}
+
+.tab-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.tab-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: auto;
+}
+
+.tab-overlay-button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: var(--shadow-sm);
+  color: var(--muted-strong);
+  cursor: pointer;
+  opacity: 0.58;
+  pointer-events: auto;
+  backdrop-filter: blur(5px);
+}
+
+.tab-overlay-button:hover,
+.tab-overlay-button:focus-visible,
+.tab-overlay-button[aria-expanded="true"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  opacity: 1;
+}
+
+.tab-overlay-button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tab-menu {
+  position: absolute;
+  top: 30px;
+  right: 2px;
+  z-index: 3;
+  display: flex;
+  width: min(280px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 44px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+}
+
+.tab-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tab-menu-header span:last-child {
+  color: var(--accent-text);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.tab-menu-list {
+  min-height: 0;
+  padding: 2px 6px 6px;
+  overflow-y: auto;
+}
+
+.tab-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-strong);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tab-menu-item:hover {
+  background: var(--surface-soft);
+  color: var(--text-strong);
+}
+
+.tab-menu-item.active {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.tab-menu-item .status-dot {
+  flex: 0 0 auto;
+}
+
+.tab-menu-item-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tab-menu-item-title {
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-menu-item-name {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-menu-empty {
+  padding: 12px 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tab-menu-exit {
+  flex: 0 0 auto;
+  padding: 10px 13px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--accent-text);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.tab-menu-exit:hover {
+  background: var(--surface-soft);
 }
 
 .tab {

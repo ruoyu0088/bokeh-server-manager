@@ -8,6 +8,7 @@
     sidebar: "bsm-sidebar-collapsed",
     sidebarWidth: "bsm-sidebar-width",
     tabs: "bsm-open-tabs",
+    tabsHidden: "bsm-tabs-hidden",
   };
   const SIDEBAR_MIN = 260;
   const SIDEBAR_MAX = 560;
@@ -44,10 +45,12 @@
     online: true,
     restored: false,
     theme: "light",
+    tabsHidden: false,
   };
 
   const elements = {
     appShell: $("#app-shell"),
+    main: $(".main"),
     sidebar: $("#sidebar"),
     sidebarCollapse: $("#sidebar-collapse"),
     sidebarResizer: $("#sidebar-resizer"),
@@ -61,8 +64,16 @@
     themeLabel: $("#theme-label"),
     languageSelect: $("#language-select"),
     tabs: $("#tabs"),
+    hideTabs: $("#hide-tabs"),
     panes: $("#panes"),
     emptyState: $("#empty-state"),
+    tabOverlay: $("#tab-overlay"),
+    tabOverlayButton: $("#tab-overlay-button"),
+    tabMenu: $("#tab-menu"),
+    tabMenuBackdrop: $("#tab-menu-backdrop"),
+    tabMenuList: $("#tab-menu-list"),
+    tabMenuCount: $("#tab-menu-count"),
+    exitTabs: $("#exit-tabs"),
     managerStatus: $("#manager-status"),
     modalRoot: $("#modal-root"),
     toastRoot: $("#toast-root"),
@@ -455,6 +466,119 @@
   function updateEmptyState() {
     const hasTabs = state.tabs.size > 0;
     elements.emptyState.classList.toggle("hidden", hasTabs);
+    updateTabControls();
+  }
+
+  function updateTabControls() {
+    const hasTabs = state.tabs.size > 0;
+    elements.hideTabs.hidden = !hasTabs;
+    elements.hideTabs.disabled = !hasTabs;
+    elements.hideTabs.setAttribute(
+      "aria-pressed",
+      String(state.tabsHidden),
+    );
+    if (!hasTabs && state.tabsHidden && state.restored) {
+      setTabsHidden(false);
+      return;
+    }
+    const hideNow = state.tabsHidden && state.restored;
+    elements.main.classList.toggle("tabs-hidden", hideNow);
+    elements.tabOverlay.hidden = !(hideNow && hasTabs);
+    elements.tabMenuCount.textContent = String(state.tabs.size);
+    if (!hideNow) closeTabMenu();
+    renderTabMenu();
+  }
+
+  function renderTabMenu() {
+    const fragment = document.createDocumentFragment();
+    if (state.tabs.size === 0) {
+      const empty = document.createElement("div");
+      empty.className = "tab-menu-empty";
+      empty.textContent = t("tabs.noTabs");
+      fragment.appendChild(empty);
+    } else {
+      for (const [name, entry] of state.tabs) {
+        const server = serverByName(name);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "tab-menu-item";
+        button.dataset.name = name;
+        button.setAttribute("role", "menuitemradio");
+        button.setAttribute(
+          "aria-checked",
+          String(state.active === name),
+        );
+        if (state.active === name) button.classList.add("active");
+
+        const dot = document.createElement("span");
+        dot.className = `status-dot ${statusClass(server?.status || "stopped")}`;
+
+        const text = document.createElement("span");
+        text.className = "tab-menu-item-text";
+        const title = document.createElement("span");
+        title.className = "tab-menu-item-title";
+        title.textContent = server ? serverTitle(server) : name;
+        const directory = document.createElement("span");
+        directory.className = "tab-menu-item-name";
+        directory.textContent = name;
+        text.append(title, directory);
+        button.append(dot, text);
+        button.addEventListener("click", () => {
+          closeTabMenu();
+          activateTab(name);
+        });
+        fragment.appendChild(button);
+      }
+    }
+    elements.tabMenuList.replaceChildren(fragment);
+  }
+
+  function closeTabMenu(focusButton = false) {
+    elements.tabMenu.hidden = true;
+    elements.tabMenuBackdrop.hidden = true;
+    elements.tabOverlayButton.setAttribute("aria-expanded", "false");
+    if (focusButton && state.tabsHidden) {
+      elements.tabOverlayButton.focus();
+    }
+  }
+
+  function setTabMenuOpen(open) {
+    if (!open) {
+      closeTabMenu();
+      return;
+    }
+    if (!state.tabsHidden || state.tabs.size === 0) return;
+    renderTabMenu();
+    elements.tabMenu.hidden = false;
+    elements.tabMenuBackdrop.hidden = false;
+    elements.tabOverlayButton.setAttribute("aria-expanded", "true");
+    requestAnimationFrame(() => {
+      const active =
+        $(".tab-menu-item.active", elements.tabMenuList) ||
+        $(".tab-menu-item", elements.tabMenuList);
+      active?.focus();
+    });
+  }
+
+  function setTabsHidden(hidden, persist = true) {
+    if (hidden && state.tabs.size === 0) {
+      toast(t("tabs.noTabs"), "info");
+      return;
+    }
+    if (state.tabsHidden === hidden) {
+      updateTabControls();
+      return;
+    }
+    state.tabsHidden = hidden;
+    if (persist) {
+      try {
+        localStorage.setItem(STORAGE.tabsHidden, hidden ? "1" : "0");
+      } catch {
+        // Ignore storage errors; the current page still switches.
+      }
+    }
+    closeTabMenu();
+    updateTabControls();
   }
 
   function persistTabs() {
@@ -690,7 +814,10 @@
     } catch {
       saved = null;
     }
-    if (!saved || !Array.isArray(saved.tabs)) return;
+    if (!saved || !Array.isArray(saved.tabs)) {
+      updateTabControls();
+      return;
+    }
     for (const name of saved.tabs) {
       const server = serverByName(name);
       if (server && server.status === "running") {
@@ -704,6 +831,7 @@
           : Array.from(state.tabs.keys())[0];
       activateTab(active);
     }
+    updateTabControls();
   }
 
   async function refreshServers({ silent = false } = {}) {
@@ -1319,10 +1447,33 @@
     handleServerAction(card.dataset.name, actionNode.dataset.action);
   });
 
+  elements.hideTabs.addEventListener("click", () => setTabsHidden(true));
+  elements.tabOverlayButton.addEventListener("click", () => {
+    setTabMenuOpen(elements.tabMenu.hidden);
+  });
+  elements.exitTabs.addEventListener("click", () => setTabsHidden(false));
+  elements.tabMenuBackdrop.addEventListener("click", () => closeTabMenu());
+
+  document.addEventListener("click", (event) => {
+    if (
+      !elements.tabMenu.hidden &&
+      !elements.tabOverlay.contains(event.target)
+    ) {
+      closeTabMenu();
+    }
+  });
+
   document.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
       event.preventDefault();
       toggleSidebar();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "m") {
+      event.preventDefault();
+      setTabsHidden(!state.tabsHidden);
+    }
+    if (event.key === "Escape" && !elements.tabMenu.hidden) {
+      closeTabMenu(true);
     }
   });
 
@@ -1335,8 +1486,17 @@
       setLanguage(event.newValue);
       applyLanguage();
     }
+    if (event.key === STORAGE.tabsHidden && event.newValue) {
+      const hidden = event.newValue === "1";
+      if (hidden !== state.tabsHidden) setTabsHidden(hidden, false);
+    }
   });
 
+  try {
+    state.tabsHidden = localStorage.getItem(STORAGE.tabsHidden) === "1";
+  } catch {
+    state.tabsHidden = false;
+  }
   initTheme();
   initSidebar();
   initSidebarResizer();
